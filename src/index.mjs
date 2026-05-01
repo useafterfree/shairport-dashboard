@@ -10,6 +10,7 @@ const MAX_POINTS = 120;
 const state = {
     latestShairport: null,
     latestWifi: null,
+    latestSystem: null,
     shairportSeries: {
         av_sync_error_ms: [],
         ppm: [],
@@ -20,6 +21,13 @@ const state = {
         tx_bitrate_mbit_s: [],
         rx_bitrate_mbit_s: [],
         tx_failed: [],
+    },
+    systemSeries: {
+        cpu_temp_c: [],
+        cpu_usage_pct: [],
+        ram_usage_pct: [],
+        fan_speed_rpm: [],
+        throttled: [],
     },
 };
 
@@ -71,6 +79,38 @@ function pushWifi(sample) {
     });
 }
 
+function pushSystem(sample) {
+    state.latestSystem = sample;
+    const x = sample.timestamp_ms || Date.now();
+
+    state.systemSeries.cpu_temp_c = keepLastN(state.systemSeries.cpu_temp_c, {
+        x,
+        y: sample.cpu_temp_c,
+    });
+    state.systemSeries.cpu_usage_pct = keepLastN(state.systemSeries.cpu_usage_pct, {
+        x,
+        y: sample.cpu_usage_pct,
+    });
+    state.systemSeries.ram_usage_pct = keepLastN(state.systemSeries.ram_usage_pct, {
+        x,
+        y: sample.ram_usage_pct,
+    });
+
+    if (sample.fan_speed_rpm !== null && sample.fan_speed_rpm !== undefined) {
+        state.systemSeries.fan_speed_rpm = keepLastN(state.systemSeries.fan_speed_rpm, {
+            x,
+            y: sample.fan_speed_rpm,
+        });
+    }
+
+    if (sample.throttled_now !== null && sample.throttled_now !== undefined) {
+        state.systemSeries.throttled = keepLastN(state.systemSeries.throttled, {
+            x,
+            y: sample.throttled_now ? 1 : 0,
+        });
+    }
+}
+
 function fmt(value, digits = 2) {
     if (value === null || value === undefined) {
         return "-";
@@ -104,6 +144,7 @@ function MetricChart(props) {
                         pointRadius: 2,
                         pointHoverRadius: 3,
                         tension: 0.2,
+                        stepped: props.stepped || false,
                     },
                 ],
             },
@@ -139,8 +180,17 @@ function MetricChart(props) {
                         },
                     },
                     y: {
+                        min: props.yMin,
+                        max: props.yMax,
                         ticks: {
                             color: "#9bc7cd",
+                            stepSize: props.yStep,
+                            callback(value) {
+                                if (props.yTickFormatter) {
+                                    return props.yTickFormatter(value);
+                                }
+                                return value;
+                            },
                         },
                         grid: {
                             color: "rgba(167, 213, 222, 0.12)",
@@ -182,6 +232,7 @@ function MetricChart(props) {
 function App(props) {
     const latestWifi = props.state.latestWifi;
     const latestShairport = props.state.latestShairport;
+    const latestSystem = props.state.latestSystem;
 
     return html`
     <main>
@@ -203,44 +254,123 @@ function App(props) {
                 <p>Missing: ${latestShairport ? latestShairport.missing : "-"}</p>
                 <p>Resend: ${latestShairport ? latestShairport.resend : "-"}</p>
             </article>
+            <article class="meta-card">
+                <h2>Raspberry Pi 5 System</h2>
+                <p>CPU Temp: ${latestSystem ? `${fmt(latestSystem.cpu_temp_c)} C` : "-"}</p>
+                <p>CPU Usage: ${latestSystem ? `${fmt(latestSystem.cpu_usage_pct)} %` : "-"}</p>
+                <p>RAM Usage: ${latestSystem ? `${fmt(latestSystem.ram_usage_pct)} %` : "-"}</p>
+                <p>Fan: ${latestSystem ? `${latestSystem.fan_speed_rpm ?? "-"} rpm` : "-"}</p>
+                <p>
+                    Throttled:
+                    ${latestSystem && latestSystem.throttled_now !== null
+            ? latestSystem.throttled_now
+                ? "yes"
+                : "no"
+            : "unknown"}
+                </p>
+            </article>
         </section>
 
-        <section class="chart-grid">
-            <${MetricChart}
-                title="Signal (dBm)"
-                value=${latestWifi ? `${fmt(latestWifi.signal_dbm, 0)} dBm` : "-"}
-                points=${props.state.wifiSeries.signal_dbm}
-            />
-            <${MetricChart}
-                title="TX Bitrate (MBit/s)"
-                value=${latestWifi ? `${fmt(latestWifi.tx_bitrate_mbit_s)} Mb/s` : "-"}
-                points=${props.state.wifiSeries.tx_bitrate_mbit_s}
-            />
-            <${MetricChart}
-                title="RX Bitrate (MBit/s)"
-                value=${latestWifi ? `${fmt(latestWifi.rx_bitrate_mbit_s)} Mb/s` : "-"}
-                points=${props.state.wifiSeries.rx_bitrate_mbit_s}
-            />
-            <${MetricChart}
-                title="TX Failed"
-                value=${latestWifi ? fmt(latestWifi.tx_failed, 0) : "-"}
-                points=${props.state.wifiSeries.tx_failed}
-            />
-            <${MetricChart}
-                title="AV Sync Error (ms)"
-                value=${latestShairport ? `${fmt(latestShairport.av_sync_error_ms)} ms` : "-"}
-                points=${props.state.shairportSeries.av_sync_error_ms}
-            />
-            <${MetricChart}
-                title="PPM"
-                value=${latestShairport ? fmt(latestShairport.ppm) : "-"}
-                points=${props.state.shairportSeries.ppm}
-            />
-            <${MetricChart}
-                title="Sync Window (ms)"
-                value=${latestShairport ? `${fmt(latestShairport.sync_window_ms)} ms` : "-"}
-                points=${props.state.shairportSeries.sync_window_ms}
-            />
+        <section class="stream-section">
+            <header class="stream-header">
+                <h2>Raspberry Pi 5 System</h2>
+                <p>Thermals, utilization, cooling, and throttling</p>
+            </header>
+            <div class="chart-grid">
+                <${MetricChart}
+                    title="CPU Temp (C)"
+                    value=${latestSystem ? `${fmt(latestSystem.cpu_temp_c)} C` : "-"}
+                    points=${props.state.systemSeries.cpu_temp_c}
+                />
+                <${MetricChart}
+                    title="CPU Usage (%)"
+                    value=${latestSystem ? `${fmt(latestSystem.cpu_usage_pct)} %` : "-"}
+                    points=${props.state.systemSeries.cpu_usage_pct}
+                    yMin=${0}
+                    yMax=${100}
+                />
+                <${MetricChart}
+                    title="RAM Usage (%)"
+                    value=${latestSystem ? `${fmt(latestSystem.ram_usage_pct)} %` : "-"}
+                    points=${props.state.systemSeries.ram_usage_pct}
+                    yMin=${0}
+                    yMax=${100}
+                />
+                <${MetricChart}
+                    title="Fan Speed (RPM)"
+                    value=${latestSystem && latestSystem.fan_speed_rpm != null
+            ? `${latestSystem.fan_speed_rpm} rpm`
+            : "-"}
+                    points=${props.state.systemSeries.fan_speed_rpm}
+                />
+                <${MetricChart}
+                    title="Processor Throttled"
+                    value=${latestSystem && latestSystem.throttled_now !== null
+            ? latestSystem.throttled_now
+                ? "yes"
+                : "no"
+            : "unknown"}
+                    points=${props.state.systemSeries.throttled}
+                    yMin=${-0.1}
+                    yMax=${1.1}
+                    yStep=${1}
+                    stepped=${true}
+                    yTickFormatter=${(value) => (Number(value) === 1 ? "yes" : "no")}
+                />
+            </div>
+        </section>
+
+        <section class="stream-section">
+            <header class="stream-header">
+                <h2>Wi-Fi Stream</h2>
+                <p>wlan0 station quality and throughput</p>
+            </header>
+            <div class="chart-grid">
+                <${MetricChart}
+                    title="Signal (dBm)"
+                    value=${latestWifi ? `${fmt(latestWifi.signal_dbm, 0)} dBm` : "-"}
+                    points=${props.state.wifiSeries.signal_dbm}
+                />
+                <${MetricChart}
+                    title="TX Bitrate (MBit/s)"
+                    value=${latestWifi ? `${fmt(latestWifi.tx_bitrate_mbit_s)} Mb/s` : "-"}
+                    points=${props.state.wifiSeries.tx_bitrate_mbit_s}
+                />
+                <${MetricChart}
+                    title="RX Bitrate (MBit/s)"
+                    value=${latestWifi ? `${fmt(latestWifi.rx_bitrate_mbit_s)} Mb/s` : "-"}
+                    points=${props.state.wifiSeries.rx_bitrate_mbit_s}
+                />
+                <${MetricChart}
+                    title="TX Failed"
+                    value=${latestWifi ? fmt(latestWifi.tx_failed, 0) : "-"}
+                    points=${props.state.wifiSeries.tx_failed}
+                />
+            </div>
+        </section>
+
+        <section class="stream-section">
+            <header class="stream-header">
+                <h2>Shairport Stream</h2>
+                <p>Audio sync drift and window behavior</p>
+            </header>
+            <div class="chart-grid">
+                <${MetricChart}
+                    title="AV Sync Error (ms)"
+                    value=${latestShairport ? `${fmt(latestShairport.av_sync_error_ms)} ms` : "-"}
+                    points=${props.state.shairportSeries.av_sync_error_ms}
+                />
+                <${MetricChart}
+                    title="PPM"
+                    value=${latestShairport ? fmt(latestShairport.ppm) : "-"}
+                    points=${props.state.shairportSeries.ppm}
+                />
+                <${MetricChart}
+                    title="Sync Window (ms)"
+                    value=${latestShairport ? `${fmt(latestShairport.sync_window_ms)} ms` : "-"}
+                    points=${props.state.shairportSeries.sync_window_ms}
+                />
+            </div>
         </section>
     </main>
   `;
@@ -263,6 +393,9 @@ ws.onmessage = (ev) => {
     }
     if (event.kind === "WifiStation") {
         pushWifi(event.payload);
+    }
+    if (event.kind === "System") {
+        pushSystem(event.payload);
     }
 
     redraw();

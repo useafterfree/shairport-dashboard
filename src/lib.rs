@@ -1,30 +1,5 @@
-use serde::Serialize;
-
-#[derive(Serialize, Clone, Debug, PartialEq)]
-pub struct WifiStationSample {
-    pub station_mac: String,
-    pub interface_name: String,
-    pub inactive_time_ms: u64,
-    pub rx_bytes: u64,
-    pub rx_packets: u64,
-    pub tx_bytes: u64,
-    pub tx_packets: u64,
-    pub tx_failed: u64,
-    pub signal_dbm: i32,
-    pub tx_bitrate_mbit_s: f64,
-    pub rx_bitrate_mbit_s: f64,
-    pub authorized: bool,
-    pub authenticated: bool,
-    pub associated: bool,
-    pub wmm_wme: bool,
-    pub tdls_peer: bool,
-    pub dtim_period: u32,
-    pub beacon_interval: u32,
-    pub short_preamble: bool,
-    pub short_slot_time: bool,
-    pub connected_time_seconds: u64,
-    pub current_time_ms: u64,
-}
+pub mod models;
+pub use models::WifiStationSample;
 
 #[derive(Default)]
 struct WifiStationSampleBuilder {
