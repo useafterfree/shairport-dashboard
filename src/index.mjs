@@ -9,6 +9,9 @@ const MAX_POINTS = 120;
 
 const state = {
     latestShairport: null,
+    latestShairportMetadata: null,
+    nowPlayingSignature: "",
+    nowPlayingPulseToken: 0,
     latestWifi: null,
     latestSystem: null,
     shairportSeries: {
@@ -56,6 +59,36 @@ function pushShairport(sample) {
         x,
         y: sample.sync_window_ms,
     });
+}
+
+function artworkDataUrl(base64Data) {
+    if (!base64Data) {
+        return null;
+    }
+
+    const trimmed = base64Data.trim();
+    if (trimmed.startsWith("iVBOR")) {
+        return `data:image/png;base64,${trimmed}`;
+    }
+    if (trimmed.startsWith("/9j/")) {
+        return `data:image/jpeg;base64,${trimmed}`;
+    }
+
+    return `data:image/*;base64,${trimmed}`;
+}
+
+function pushShairportMetadata(sample) {
+    const signature = [sample.track ?? "", sample.artist ?? "", sample.album ?? ""].join("|");
+    const hasAnyValue = Boolean(sample.track || sample.artist || sample.album);
+    if (hasAnyValue && signature !== state.nowPlayingSignature) {
+        state.nowPlayingPulseToken += 1;
+    }
+    state.nowPlayingSignature = signature;
+
+    state.latestShairportMetadata = {
+        ...sample,
+        artwork_url: artworkDataUrl(sample.artwork_base64),
+    };
 }
 
 function pushWifi(sample) {
@@ -232,7 +265,9 @@ function MetricChart(props) {
 function App(props) {
     const latestWifi = props.state.latestWifi;
     const latestShairport = props.state.latestShairport;
+    const latestShairportMetadata = props.state.latestShairportMetadata;
     const latestSystem = props.state.latestSystem;
+    const nowPlayingPulseClass = props.state.nowPlayingPulseToken > 0 ? "pulse-highlight" : "";
 
     return html`
     <main>
@@ -242,6 +277,12 @@ function App(props) {
         </section>
 
         <section class="meta-grid">
+            <article key=${`top-now-playing-${props.state.nowPlayingPulseToken}`} class=${`meta-card ${nowPlayingPulseClass}`}>
+                <h2>Now Playing</h2>
+                <p>Track: ${latestShairportMetadata?.track || "-"}</p>
+                <p>Artist: ${latestShairportMetadata?.artist || "-"}</p>
+                <p>Album: ${latestShairportMetadata?.album || "-"}</p>
+            </article>
             <article class="meta-card">
                 <h2>Wi-Fi Station</h2>
                 <p>MAC: ${latestWifi ? latestWifi.station_mac : "-"}</p>
@@ -354,6 +395,20 @@ function App(props) {
                 <h2>Shairport Stream</h2>
                 <p>Audio sync drift and window behavior</p>
             </header>
+            <div class="shairport-meta-wrap">
+                <article key=${`stream-now-playing-${props.state.nowPlayingPulseToken}`} class=${`meta-card now-playing-card ${nowPlayingPulseClass}`}>
+                    <h2>Track Metadata</h2>
+                    <p>Track: ${latestShairportMetadata?.track || "-"}</p>
+                    <p>Artist: ${latestShairportMetadata?.artist || "-"}</p>
+                    <p>Album: ${latestShairportMetadata?.album || "-"}</p>
+                </article>
+                <article class="meta-card art-card">
+                    <h2>Artwork</h2>
+                    ${latestShairportMetadata?.artwork_url
+            ? html`<img src=${latestShairportMetadata.artwork_url} alt="album art" class="art-image" />`
+            : html`<div class="art-placeholder">No art</div>`}
+                </article>
+            </div>
             <div class="chart-grid">
                 <${MetricChart}
                     title="AV Sync Error (ms)"
@@ -396,6 +451,9 @@ ws.onmessage = (ev) => {
     }
     if (event.kind === "System") {
         pushSystem(event.payload);
+    }
+    if (event.kind === "ShairportMetadata") {
+        pushShairportMetadata(event.payload);
     }
 
     redraw();

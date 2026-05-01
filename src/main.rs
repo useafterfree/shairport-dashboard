@@ -1,6 +1,7 @@
 mod collectors;
 
 use collectors::shairport::stream_shairport_logs;
+use collectors::shairport_metadata::stream_shairport_metadata;
 use collectors::system::stream_system_stats;
 use collectors::wifi::stream_wlan_station_dump;
 use rust_stats::models::SampleEvent;
@@ -33,6 +34,7 @@ async fn main() {
     let (tx, _) = tokio::sync::broadcast::channel(100);
 
     tokio::spawn(stream_shairport_logs(tx.clone()));
+    tokio::spawn(stream_shairport_metadata(tx.clone()));
     tokio::spawn(stream_wlan_station_dump(tx.clone()));
     tokio::spawn(stream_system_stats(tx.clone()));
 

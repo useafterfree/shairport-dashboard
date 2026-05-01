@@ -50,9 +50,19 @@ pub struct SystemSample {
 }
 
 #[derive(Serialize, Clone)]
+pub struct ShairportMetadataSample {
+    pub timestamp_ms: u64,
+    pub track: Option<String>,
+    pub artist: Option<String>,
+    pub album: Option<String>,
+    pub artwork_base64: Option<String>,
+}
+
+#[derive(Serialize, Clone)]
 #[serde(tag = "kind", content = "payload")]
 pub enum SampleEvent {
     Shairport(ShairportSample),
     WifiStation(WifiStationSample),
     System(SystemSample),
+    ShairportMetadata(ShairportMetadataSample),
 }
