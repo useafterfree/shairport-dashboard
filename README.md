@@ -148,8 +148,10 @@ make uninstall
 
 ## Screenshots
 
-Screenshots are intentionally deferred for now and can be added later under a section like:
+### Screenshot 1
 
-- Dashboard overview
-- Purple theme example
-- System metrics section
+![Dashboard Screenshot 1](media/file.jpe)
+
+### Screenshot 2
+
+![Dashboard Screenshot 2](media/file2.jpe)
