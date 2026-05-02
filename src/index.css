@@ -126,23 +126,89 @@ main {
     grid-template-columns: minmax(260px, 2fr) minmax(220px, 1fr);
 }
 
-.now-playing-card p {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.now-playing-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 16px 18px;
+}
+
+.np-label {
+    margin: 0 0 10px;
+    font-size: calc(0.7rem * 3);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-family: "IBM Plex Mono", monospace;
+    color: var(--accent);
+    opacity: 0.7;
+}
+
+.np-track {
+    margin: 0 0 3px;
+    font-size: clamp(calc(1.05rem * 3), 8.4vw, calc(1.5rem * 3));
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.np-artist {
+    margin: 0 0 10px;
+    font-size: clamp(calc(0.85rem * 3), 5.4vw, calc(1rem * 3));
+    color: var(--accent);
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.np-secondary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6ch;
+    font-size: calc(0.8rem * 3);
+    font-family: "IBM Plex Mono", monospace;
+    color: var(--muted);
+    overflow: visible;
+    min-width: 0;
+}
+
+.np-album {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+.np-sep {
+    flex-shrink: 0;
+    opacity: 0.45;
+}
+
+.np-genre {
+    flex-shrink: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    background: rgba(83, 210, 179, 0.1);
+    border: 1px solid rgba(83, 210, 179, 0.3);
+    border-radius: 20px;
+    padding: 1px 9px;
+    font-size: calc(0.75rem * 3);
+    color: var(--accent);
 }
 
 .art-card {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    padding: 0;
+    overflow: hidden;
 }
 
 .art-image,
 .art-placeholder {
     width: 100%;
     aspect-ratio: 1 / 1;
-    border-radius: 10px;
+    border-radius: 11px;
+    flex: 1 1 auto;
 }
 
 .art-image {
@@ -162,6 +228,31 @@ main {
 
 .pulse-highlight {
     animation: now-playing-pulse 900ms ease-out;
+}
+
+@media (max-width: 640px) {
+    .shairport-meta-wrap {
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .art-card {
+        flex: 0 0 min(34vw, 130px);
+        order: -1;
+    }
+
+    .art-image,
+    .art-placeholder {
+        height: 100%;
+        aspect-ratio: auto;
+    }
+
+    .now-playing-card {
+        flex: 1 1 0;
+        min-width: 0;
+    }
 }
 
 @keyframes now-playing-pulse {

@@ -322,16 +322,17 @@ function App(props) {
             </header>
             <div class="shairport-meta-wrap">
                 <article key=${`stream-now-playing-${props.state.nowPlayingPulseToken}`} class=${`meta-card now-playing-card ${nowPlayingPulseClass}`}>
-                    <h2>Track Metadata</h2>
-                    <div class="meta-card-rows">
-                        <span class="lbl">Track</span><span class="val">${latestShairportMetadata?.track || "-"}</span>
-                        <span class="lbl">Artist</span><span class="val">${latestShairportMetadata?.artist || "-"}</span>
-                        <span class="lbl">Album</span><span class="val">${latestShairportMetadata?.album || "-"}</span>
-                        <span class="lbl">Genre</span><span class="val">${latestShairportMetadata?.genre || "-"}</span>
+                    <p class="np-label">Now Playing</p>
+                    <p class="np-track">${latestShairportMetadata?.track || "\u2014"}</p>
+                    <p class="np-artist">${latestShairportMetadata?.artist || "\u2014"}</p>
+                    <div class="np-secondary">
+                        <span class="np-album">${latestShairportMetadata?.album || "\u2014"}</span>
+                        ${latestShairportMetadata?.genre
+            ? html`<span class="np-sep">\u00b7</span><span class="np-genre">${latestShairportMetadata.genre}</span>`
+            : ""}
                     </div>
                 </article>
                 <article class="meta-card art-card">
-                    <h2>Artwork</h2>
                     ${latestShairportMetadata?.artwork_url
             ? html`<img src=${latestShairportMetadata.artwork_url} alt="album art" class="art-image" />`
             : html`<div class="art-placeholder">No art</div>`}

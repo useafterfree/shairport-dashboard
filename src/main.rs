@@ -4,7 +4,7 @@ use collectors::shairport::stream_shairport_logs;
 use collectors::shairport_metadata::stream_shairport_metadata;
 use collectors::system::stream_system_stats;
 use collectors::wifi::stream_wlan_station_dump;
-use rust_stats::models::SampleEvent;
+use shairport_dashboard::models::SampleEvent;
 
 use axum::{
     Router,
