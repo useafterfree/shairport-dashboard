@@ -4,8 +4,10 @@ import htm from "https://cdn.jsdelivr.net/npm/htm@3.1.1/+esm";
 import ChartJS from "https://cdn.jsdelivr.net/npm/chart.js@4.4.3/auto/+esm";
 
 const html = htm.bind(h);
+const THEMES = ["terminal", "purple", "high-contrast", "black-white"];
 
 const state = {
+    theme: "terminal",
     latestShairport: null,
     latestShairportMetadata: null,
     nowPlayingSignature: "",
@@ -44,6 +46,36 @@ const state = {
 
 function keepLastN(points, value) {
     return [...points, value];
+}
+
+function applyTheme(themeName, persist = true) {
+    const nextTheme = THEMES.includes(themeName) ? themeName : "terminal";
+    state.theme = nextTheme;
+    document.body.dataset.theme = nextTheme;
+
+    if (!persist) {
+        return;
+    }
+
+    try {
+        localStorage.setItem("dashboard-theme", nextTheme);
+    } catch (_err) {
+        // Ignore storage failures (private mode, blocked storage, etc.)
+    }
+}
+
+function initTheme() {
+    let savedTheme = "terminal";
+    try {
+        const value = localStorage.getItem("dashboard-theme");
+        if (value) {
+            savedTheme = value;
+        }
+    } catch (_err) {
+        // Keep default theme when storage is unavailable.
+    }
+
+    applyTheme(savedTheme, false);
 }
 
 function downsampleSeries(points, maxPoints) {
@@ -414,8 +446,26 @@ function App(props) {
     return html`
     <main>
         <section class="title-row">
-            <h1>Shairport Dashboard</h1>
-            <p>Realtime shairport and wlan0 station telemetry</p>
+            <div>
+                <h1>Shairport Dashboard</h1>
+                <p>Realtime shairport and wlan0 station telemetry</p>
+            </div>
+            <label class="theme-picker">
+                Theme
+                <select
+                    class="theme-select"
+                    value=${props.state.theme}
+                    onchange=${(ev) => {
+            applyTheme(ev.target.value);
+            redraw();
+        }}
+                >
+                    <option value="terminal">Terminal</option>
+                    <option value="purple">Purple</option>
+                    <option value="high-contrast">High Contrast</option>
+                    <option value="black-white">Black / White</option>
+                </select>
+            </label>
         </section>
 
         <section class="status-strip" aria-live="polite">
@@ -657,4 +707,6 @@ function connect() {
     };
 }
 
+initTheme();
+redraw();
 connect();

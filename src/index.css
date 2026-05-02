@@ -1,8 +1,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap");
 
 :root {
+    --font-sans: "Space Grotesk", sans-serif;
+    --font-mono: "IBM Plex Mono", monospace;
     --bg0: #06131a;
     --bg1: #0f2830;
+    --bg-gradient:
+        radial-gradient(circle at 20% 10%, rgba(43, 149, 145, 0.35), transparent 40%),
+        radial-gradient(circle at 80% 75%, rgba(71, 186, 139, 0.22), transparent 35%),
+        linear-gradient(155deg, var(--bg0), var(--bg1));
     --panel: rgba(5, 22, 30, 0.72);
     --panel-border: rgba(167, 213, 222, 0.26);
     --text: #dff5f6;
@@ -22,12 +28,59 @@ body {
 }
 
 body {
-    font-family: "Space Grotesk", sans-serif;
+    font-family: var(--font-sans);
     color: var(--text);
-    background:
-        radial-gradient(circle at 20% 10%, rgba(43, 149, 145, 0.35), transparent 40%),
-        radial-gradient(circle at 80% 75%, rgba(71, 186, 139, 0.22), transparent 35%),
-        linear-gradient(155deg, var(--bg0), var(--bg1));
+    background: var(--bg-gradient);
+}
+
+body[data-theme="terminal"] {
+    --font-sans: "Space Grotesk", sans-serif;
+    --font-mono: "IBM Plex Mono", monospace;
+}
+
+body[data-theme="purple"] {
+    --font-sans: "Trebuchet MS", "Segoe UI", sans-serif;
+    --font-mono: "Consolas", "Liberation Mono", monospace;
+    --bg0: #140b27;
+    --bg1: #2f1254;
+    --bg-gradient:
+        radial-gradient(circle at 15% 18%, rgba(140, 96, 214, 0.45), transparent 36%),
+        radial-gradient(circle at 84% 75%, rgba(203, 132, 255, 0.28), transparent 38%),
+        linear-gradient(160deg, var(--bg0), var(--bg1));
+    --panel: rgba(30, 11, 54, 0.72);
+    --panel-border: rgba(204, 166, 255, 0.34);
+    --text: #f3e9ff;
+    --muted: #c7afe8;
+    --accent: #d49dff;
+    --line: #e3c0ff;
+}
+
+body[data-theme="high-contrast"] {
+    --font-sans: "Verdana", "Segoe UI", sans-serif;
+    --font-mono: "Courier New", monospace;
+    --bg0: #000000;
+    --bg1: #000000;
+    --bg-gradient: linear-gradient(180deg, #000000, #000000);
+    --panel: rgba(0, 0, 0, 0.95);
+    --panel-border: rgba(255, 255, 255, 0.9);
+    --text: #ffffff;
+    --muted: #f5f5f5;
+    --accent: #ffff00;
+    --line: #ffff00;
+}
+
+body[data-theme="black-white"] {
+    --font-sans: "Georgia", "Times New Roman", serif;
+    --font-mono: "Courier New", monospace;
+    --bg0: #efefef;
+    --bg1: #d9d9d9;
+    --bg-gradient: linear-gradient(165deg, var(--bg0), var(--bg1));
+    --panel: rgba(255, 255, 255, 0.88);
+    --panel-border: rgba(0, 0, 0, 0.25);
+    --text: #111111;
+    --muted: #2e2e2e;
+    --accent: #000000;
+    --line: #111111;
 }
 
 main {
@@ -40,6 +93,13 @@ main {
     margin: 0;
     font-size: clamp(1.8rem, 4vw, 2.8rem);
     letter-spacing: 0.02em;
+}
+
+.title-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
 }
 
 .title-row p {
@@ -60,7 +120,7 @@ main {
     border-radius: 999px;
     font-size: 0.78rem;
     line-height: 1;
-    font-family: "IBM Plex Mono", monospace;
+    font-family: var(--font-mono);
     border: 1px solid transparent;
 }
 
@@ -141,7 +201,7 @@ main {
     grid-template-columns: max-content 1fr;
     column-gap: 1.5ch;
     row-gap: 4px;
-    font-family: "IBM Plex Mono", monospace;
+    font-family: var(--font-mono);
     font-size: 0.9rem;
     margin-top: 4px;
 }
@@ -202,7 +262,7 @@ main {
     font-size: calc(0.7rem * 3);
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    font-family: "IBM Plex Mono", monospace;
+    font-family: var(--font-mono);
     color: var(--accent);
     opacity: 0.7;
 }
@@ -230,7 +290,7 @@ main {
     flex-wrap: wrap;
     gap: 0.6ch;
     font-size: calc(0.8rem * 3);
-    font-family: "IBM Plex Mono", monospace;
+    font-family: var(--font-mono);
     color: var(--muted);
     overflow: visible;
     min-width: 0;
@@ -285,7 +345,7 @@ main {
     align-items: center;
     justify-content: center;
     color: var(--muted);
-    font-family: "IBM Plex Mono", monospace;
+    font-family: var(--font-mono);
     background: rgba(10, 35, 46, 0.7);
     border: 1px dashed rgba(167, 213, 222, 0.24);
 }
@@ -350,9 +410,40 @@ main {
 }
 
 .chart-card span {
-    font-family: "IBM Plex Mono", monospace;
+    font-family: var(--font-mono);
     font-size: 0.87rem;
     color: var(--accent);
+}
+
+.theme-picker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+}
+
+.theme-select {
+    border-radius: 8px;
+    border: 1px solid var(--panel-border);
+    background: var(--panel);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    padding: 5px 8px;
+}
+
+body[data-theme="black-white"] .status-chip.is-live,
+body[data-theme="black-white"] .status-chip.is-warn,
+body[data-theme="black-white"] .status-chip.is-stale,
+body[data-theme="black-white"] .status-chip.is-unknown,
+body[data-theme="black-white"] .status-chip.ws-chip,
+body[data-theme="black-white"] .status-chip.metadata-chip {
+    color: #111;
+    background: rgba(0, 0, 0, 0.06);
+    border-color: rgba(0, 0, 0, 0.26);
 }
 
 .chart-canvas-wrap {
