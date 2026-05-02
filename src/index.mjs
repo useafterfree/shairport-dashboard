@@ -5,13 +5,19 @@ import ChartJS from "https://cdn.jsdelivr.net/npm/chart.js@4.4.3/auto/+esm";
 
 const html = htm.bind(h);
 
-const MAX_POINTS = 120;
-
 const state = {
     latestShairport: null,
     latestShairportMetadata: null,
     nowPlayingSignature: "",
     nowPlayingPulseToken: 0,
+    wsState: "connecting",
+    wsLastMessageMs: null,
+    lastUpdateMs: {
+        shairport: null,
+        metadata: null,
+        wifi: null,
+        system: null,
+    },
     latestWifi: null,
     latestSystem: null,
     shairportSeries: {
@@ -36,8 +42,109 @@ const state = {
     },
 };
 
-function keepLastN(points, value, size = MAX_POINTS) {
-    return [...points, value].slice(-size);
+function keepLastN(points, value) {
+    return [...points, value];
+}
+
+function downsampleSeries(points, maxPoints) {
+    if (!Array.isArray(points) || points.length <= maxPoints) {
+        return points || [];
+    }
+
+    const total = points.length;
+    const interior = total - 2;
+    const bucketCount = Math.max(1, Math.floor(maxPoints / 2));
+    const bucketSize = interior / bucketCount;
+    const sampled = [points[0]];
+
+    for (let bucket = 0; bucket < bucketCount; bucket++) {
+        const start = 1 + Math.floor(bucket * bucketSize);
+        const end = 1 + Math.floor((bucket + 1) * bucketSize);
+        if (start >= total - 1) {
+            break;
+        }
+
+        let minIdx = start;
+        let maxIdx = start;
+        for (let i = start; i < Math.min(end, total - 1); i++) {
+            if (points[i].y < points[minIdx].y) {
+                minIdx = i;
+            }
+            if (points[i].y > points[maxIdx].y) {
+                maxIdx = i;
+            }
+        }
+
+        if (minIdx === maxIdx) {
+            sampled.push(points[minIdx]);
+            continue;
+        }
+
+        if (minIdx < maxIdx) {
+            sampled.push(points[minIdx], points[maxIdx]);
+        } else {
+            sampled.push(points[maxIdx], points[minIdx]);
+        }
+    }
+
+    sampled.push(points[total - 1]);
+    return sampled;
+}
+
+function eventTimeMs(recordedAtMs) {
+    return recordedAtMs || Date.now();
+}
+
+function updateStreamTimestamp(streamName, recordedAtMs) {
+    state.lastUpdateMs[streamName] = eventTimeMs(recordedAtMs);
+}
+
+function freshnessClass(timestampMs) {
+    if (!timestampMs) {
+        return "is-unknown";
+    }
+
+    const ageMs = Date.now() - timestampMs;
+    if (ageMs <= 5000) {
+        return "is-live";
+    }
+    if (ageMs <= 15000) {
+        return "is-warn";
+    }
+    return "is-stale";
+}
+
+function freshnessLabel(timestampMs) {
+    if (!timestampMs) {
+        return "unknown";
+    }
+
+    const ageSec = Math.floor((Date.now() - timestampMs) / 1000);
+    if (ageSec <= 5) {
+        return "live";
+    }
+    return `stale ${ageSec}s`;
+}
+
+function metadataLastUpdatedLabel(timestampMs) {
+    if (!timestampMs) {
+        return "Metadata last updated: never";
+    }
+
+    return `Metadata last updated: ${new Date(timestampMs).toLocaleTimeString()}`;
+}
+
+function wsLabel() {
+    if (state.wsState === "live") {
+        return "connected";
+    }
+    if (state.wsState === "reconnecting") {
+        return "reconnecting";
+    }
+    if (state.wsState === "error") {
+        return "error";
+    }
+    return "connecting";
 }
 
 function parseShairportTime(timestamp, recordedAtMs) {
@@ -50,6 +157,7 @@ function parseShairportTime(timestamp, recordedAtMs) {
 }
 
 function pushShairport(sample, recordedAtMs) {
+    updateStreamTimestamp("shairport", recordedAtMs);
     state.latestShairport = sample;
     const x = parseShairportTime(sample.timestamp, recordedAtMs);
     state.shairportSeries.av_sync_error_ms = keepLastN(state.shairportSeries.av_sync_error_ms, {
@@ -87,7 +195,8 @@ function artworkDataUrl(base64Data) {
     return `data:image/*;base64,${trimmed}`;
 }
 
-function pushShairportMetadata(sample) {
+function pushShairportMetadata(sample, recordedAtMs) {
+    updateStreamTimestamp("metadata", recordedAtMs);
     const signature = [sample.track ?? "", sample.artist ?? "", sample.album ?? ""].join("|");
     const hasAnyValue = Boolean(sample.track || sample.artist || sample.album);
     if (hasAnyValue && signature !== state.nowPlayingSignature) {
@@ -102,6 +211,7 @@ function pushShairportMetadata(sample) {
 }
 
 function pushWifi(sample, recordedAtMs) {
+    updateStreamTimestamp("wifi", recordedAtMs);
     state.latestWifi = sample;
     const x = sample.current_time_ms || recordedAtMs || Date.now();
     state.wifiSeries.signal_dbm = keepLastN(state.wifiSeries.signal_dbm, {
@@ -123,6 +233,7 @@ function pushWifi(sample, recordedAtMs) {
 }
 
 function pushSystem(sample, recordedAtMs) {
+    updateStreamTimestamp("system", recordedAtMs);
     state.latestSystem = sample;
     const x = sample.timestamp_ms || recordedAtMs || Date.now();
 
@@ -164,6 +275,19 @@ function fmt(value, digits = 2) {
     }
 
     return String(value);
+}
+
+function formatHms(totalSeconds) {
+    if (totalSeconds === null || totalSeconds === undefined) {
+        return "-";
+    }
+
+    const seconds = Math.max(0, Number(totalSeconds) || 0);
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+
+    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
 function MetricChart(props) {
@@ -255,7 +379,12 @@ function MetricChart(props) {
             return;
         }
 
-        chartRef.current.data.datasets[0].data = props.points || [];
+        const widthPx = canvasRef.current?.clientWidth || chartRef.current.width || 300;
+        const targetRenderPoints = Math.max(80, Math.floor(widthPx / 2));
+        chartRef.current.data.datasets[0].data = downsampleSeries(
+            props.points || [],
+            targetRenderPoints,
+        );
         chartRef.current.update("none");
     }, [props.points]);
 
@@ -278,12 +407,33 @@ function App(props) {
     const latestShairportMetadata = props.state.latestShairportMetadata;
     const latestSystem = props.state.latestSystem;
     const nowPlayingPulseClass = props.state.nowPlayingPulseToken > 0 ? "pulse-highlight" : "";
+    const shairportFreshness = freshnessClass(props.state.lastUpdateMs.shairport);
+    const wifiFreshness = freshnessClass(props.state.lastUpdateMs.wifi);
+    const systemFreshness = freshnessClass(props.state.lastUpdateMs.system);
 
     return html`
     <main>
         <section class="title-row">
             <h1>Shairport Dashboard</h1>
             <p>Realtime shairport and wlan0 station telemetry</p>
+        </section>
+
+        <section class="status-strip" aria-live="polite">
+            <span class=${`status-chip ws-chip ws-${props.state.wsState}`}>
+                WS ${wsLabel()}
+            </span>
+            <span class=${`status-chip ${shairportFreshness}`}>
+                Shairport ${freshnessLabel(props.state.lastUpdateMs.shairport)}
+            </span>
+            <span class="status-chip metadata-chip">
+                ${metadataLastUpdatedLabel(props.state.lastUpdateMs.metadata)}
+            </span>
+            <span class=${`status-chip ${wifiFreshness}`}>
+                Wi-Fi ${freshnessLabel(props.state.lastUpdateMs.wifi)}
+            </span>
+            <span class=${`status-chip ${systemFreshness}`}>
+                System ${freshnessLabel(props.state.lastUpdateMs.system)}
+            </span>
         </section>
 
         <section class="meta-grid">
@@ -301,7 +451,7 @@ function App(props) {
                 <div class="meta-card-rows">
                     <span class="lbl">MAC</span><span class="val">${latestWifi ? latestWifi.station_mac : "-"}</span>
                     <span class="lbl">Interface</span><span class="val">${latestWifi ? latestWifi.interface_name : "-"}</span>
-                    <span class="lbl">Connected</span><span class="val">${latestWifi ? `${latestWifi.connected_time_seconds}s` : "-"}</span>
+                    <span class="lbl">Connected</span><span class="val">${latestWifi ? formatHms(latestWifi.connected_time_seconds) : "-"}</span>
                     <span class="lbl">Tx Failed</span><span class="val">${latestWifi ? latestWifi.tx_failed : "-"}</span>
                 </div>
             </article>
@@ -467,13 +617,19 @@ const wsUrl = new URL("/ws", window.location.href);
 wsUrl.protocol = wsUrl.protocol.replace("http", "ws");
 
 function connect() {
+    state.wsState = "connecting";
+    redraw();
     const ws = new WebSocket(wsUrl.href);
 
-    ws.onopen = () => redraw();
+    ws.onopen = () => {
+        state.wsState = "live";
+        redraw();
+    };
 
     ws.onmessage = (ev) => {
         let event = JSON.parse(ev.data);
         const recordedAtMs = event.recorded_at_ms;
+        state.wsLastMessageMs = eventTimeMs(recordedAtMs);
         if (event.kind === "Shairport") {
             pushShairport(event.payload, recordedAtMs);
         }
@@ -484,13 +640,21 @@ function connect() {
             pushSystem(event.payload, recordedAtMs);
         }
         if (event.kind === "ShairportMetadata") {
-            pushShairportMetadata(event.payload);
+            pushShairportMetadata(event.payload, recordedAtMs);
         }
         redraw();
     };
 
-    ws.onclose = () => setTimeout(connect, 1000);
-    ws.onerror = () => ws.close();
+    ws.onclose = () => {
+        state.wsState = "reconnecting";
+        redraw();
+        setTimeout(connect, 1000);
+    };
+    ws.onerror = () => {
+        state.wsState = "error";
+        redraw();
+        ws.close();
+    };
 }
 
 connect();

@@ -48,6 +48,70 @@ main {
     font-size: 0.98rem;
 }
 
+.status-strip {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.status-chip {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    line-height: 1;
+    font-family: "IBM Plex Mono", monospace;
+    border: 1px solid transparent;
+}
+
+.status-chip.is-live {
+    color: #8effd6;
+    background: rgba(61, 182, 140, 0.16);
+    border-color: rgba(98, 228, 180, 0.42);
+}
+
+.status-chip.is-warn {
+    color: #ffe295;
+    background: rgba(191, 152, 57, 0.16);
+    border-color: rgba(255, 217, 123, 0.4);
+}
+
+.status-chip.is-stale,
+.status-chip.is-unknown {
+    color: #ffc4c4;
+    background: rgba(165, 80, 80, 0.18);
+    border-color: rgba(232, 129, 129, 0.36);
+}
+
+.status-chip.ws-chip {
+    border-width: 1.5px;
+}
+
+.status-chip.ws-live {
+    color: #9cf5dd;
+    background: rgba(40, 176, 140, 0.18);
+    border-color: rgba(107, 242, 205, 0.5);
+}
+
+.status-chip.ws-connecting,
+.status-chip.ws-reconnecting {
+    color: #c9ddff;
+    background: rgba(84, 115, 176, 0.2);
+    border-color: rgba(149, 175, 227, 0.5);
+}
+
+.status-chip.ws-error {
+    color: #ffc0c0;
+    background: rgba(181, 66, 66, 0.24);
+    border-color: rgba(239, 118, 118, 0.56);
+}
+
+.status-chip.metadata-chip {
+    color: var(--muted);
+    background: rgba(39, 58, 66, 0.34);
+    border-color: rgba(130, 168, 177, 0.3);
+}
+
 .meta-grid {
     margin-top: 18px;
     display: grid;

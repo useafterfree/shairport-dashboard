@@ -165,7 +165,10 @@ async fn load_history(path: &str) -> HistoryState {
 
 async fn save_history(path: &str, history: PersistedHistory) {
     if let Ok(raw) = serde_json::to_string(&history) {
-        let _ = tokio::fs::write(path, raw).await;
+        let tmp_path = format!("{path}.tmp");
+        if tokio::fs::write(&tmp_path, raw).await.is_ok() {
+            let _ = tokio::fs::rename(&tmp_path, path).await;
+        }
     }
 }
 
