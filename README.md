@@ -2,6 +2,8 @@
 
 Realtime dashboard for Raspberry Pi audio + system telemetry, built with Rust (Axum + Tokio) and a lightweight browser UI (Preact + Chart.js).
 
+![Hero View](media/hero.jpe)
+
 ## What This App Does
 
 - Streams shairport-sync timing metrics from systemd logs
@@ -146,12 +148,22 @@ To remove:
 make uninstall
 ```
 
-## Screenshots
+## Themes
 
-### Screenshot 1
+### Terminal Theme
 
-![Dashboard Screenshot 1](media/file.jpe)
+![Terminal Theme](media/terminal.jpe)
 
-### Screenshot 2
+### Purple Theme
 
-![Dashboard Screenshot 2](media/file2.jpe)
+![Purple Theme](media/purple.jpe)
+
+## Dashboard Views
+
+### Hero
+
+![Hero View](media/hero.jpe)
+
+### Stats
+
+![Stats View](media/stats.jpe)
