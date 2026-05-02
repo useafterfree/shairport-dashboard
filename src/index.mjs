@@ -18,6 +18,8 @@ const state = {
         av_sync_error_ms: [],
         ppm: [],
         sync_window_ms: [],
+        missing: [],
+        resend: [],
     },
     wifiSeries: {
         signal_dbm: [],
@@ -58,6 +60,14 @@ function pushShairport(sample, recordedAtMs) {
     state.shairportSeries.sync_window_ms = keepLastN(state.shairportSeries.sync_window_ms, {
         x,
         y: sample.sync_window_ms,
+    });
+    state.shairportSeries.missing = keepLastN(state.shairportSeries.missing, {
+        x,
+        y: sample.missing,
+    });
+    state.shairportSeries.resend = keepLastN(state.shairportSeries.resend, {
+        x,
+        y: sample.resend,
     });
 }
 
@@ -172,8 +182,8 @@ function MetricChart(props) {
                     {
                         data: props.points || [],
                         parsing: false,
-                        borderColor: "#77f7d8",
-                        borderWidth: 2.2,
+                        borderColor: "#b8ffe9",
+                        borderWidth: 1.4,
                         pointRadius: 2,
                         pointHoverRadius: 3,
                         tension: 0.2,
@@ -317,12 +327,11 @@ function App(props) {
 
         <section class="stream-section">
             <header class="stream-header">
-                <h2>Shairport Stream</h2>
+                <h2>Now Playing</h2>
                 <p>Audio sync drift and window behavior</p>
             </header>
             <div class="shairport-meta-wrap">
                 <article key=${`stream-now-playing-${props.state.nowPlayingPulseToken}`} class=${`meta-card now-playing-card ${nowPlayingPulseClass}`}>
-                    <p class="np-label">Now Playing</p>
                     <p class="np-track">${latestShairportMetadata?.track || "\u2014"}</p>
                     <p class="np-artist">${latestShairportMetadata?.artist || "\u2014"}</p>
                     <div class="np-secondary">
@@ -353,6 +362,16 @@ function App(props) {
                     title="Sync Window (ms)"
                     value=${latestShairport ? `${fmt(latestShairport.sync_window_ms)} ms` : "-"}
                     points=${props.state.shairportSeries.sync_window_ms}
+                />
+                <${MetricChart}
+                    title="Missing"
+                    value=${latestShairport ? fmt(latestShairport.missing, 0) : "-"}
+                    points=${props.state.shairportSeries.missing}
+                />
+                <${MetricChart}
+                    title="Resend"
+                    value=${latestShairport ? fmt(latestShairport.resend, 0) : "-"}
+                    points=${props.state.shairportSeries.resend}
                 />
             </div>
         </section>
