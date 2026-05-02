@@ -37,5 +37,9 @@ pub async fn stream_wlan_station_dump(tx: broadcast::Sender<SampleEvent>) {
                 let _ = tx.send(SampleEvent::WifiStation(sample));
             }
         }
+
+        if let Some(sample) = parser.finish() {
+            let _ = tx.send(SampleEvent::WifiStation(sample));
+        }
     }
 }

@@ -29,29 +29,34 @@ struct WifiStationSampleBuilder {
 
 impl WifiStationSampleBuilder {
     fn build(self) -> Option<WifiStationSample> {
+        let now_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+
         Some(WifiStationSample {
             station_mac: self.station_mac?,
             interface_name: self.interface_name?,
-            inactive_time_ms: self.inactive_time_ms?,
-            rx_bytes: self.rx_bytes?,
-            rx_packets: self.rx_packets?,
-            tx_bytes: self.tx_bytes?,
-            tx_packets: self.tx_packets?,
-            tx_failed: self.tx_failed?,
-            signal_dbm: self.signal_dbm?,
-            tx_bitrate_mbit_s: self.tx_bitrate_mbit_s?,
-            rx_bitrate_mbit_s: self.rx_bitrate_mbit_s?,
-            authorized: self.authorized?,
-            authenticated: self.authenticated?,
-            associated: self.associated?,
-            wmm_wme: self.wmm_wme?,
-            tdls_peer: self.tdls_peer?,
-            dtim_period: self.dtim_period?,
-            beacon_interval: self.beacon_interval?,
-            short_preamble: self.short_preamble?,
-            short_slot_time: self.short_slot_time?,
-            connected_time_seconds: self.connected_time_seconds?,
-            current_time_ms: self.current_time_ms?,
+            inactive_time_ms: self.inactive_time_ms.unwrap_or(0),
+            rx_bytes: self.rx_bytes.unwrap_or(0),
+            rx_packets: self.rx_packets.unwrap_or(0),
+            tx_bytes: self.tx_bytes.unwrap_or(0),
+            tx_packets: self.tx_packets.unwrap_or(0),
+            tx_failed: self.tx_failed.unwrap_or(0),
+            signal_dbm: self.signal_dbm.unwrap_or(0),
+            tx_bitrate_mbit_s: self.tx_bitrate_mbit_s.unwrap_or(0.0),
+            rx_bitrate_mbit_s: self.rx_bitrate_mbit_s.unwrap_or(0.0),
+            authorized: self.authorized.unwrap_or(false),
+            authenticated: self.authenticated.unwrap_or(false),
+            associated: self.associated.unwrap_or(false),
+            wmm_wme: self.wmm_wme.unwrap_or(false),
+            tdls_peer: self.tdls_peer.unwrap_or(false),
+            dtim_period: self.dtim_period.unwrap_or(0),
+            beacon_interval: self.beacon_interval.unwrap_or(0),
+            short_preamble: self.short_preamble.unwrap_or(false),
+            short_slot_time: self.short_slot_time.unwrap_or(false),
+            connected_time_seconds: self.connected_time_seconds.unwrap_or(0),
+            current_time_ms: self.current_time_ms.unwrap_or(now_ms),
         })
     }
 }
@@ -117,6 +122,11 @@ impl WifiStationParser {
         }
 
         None
+    }
+
+    pub fn finish(&mut self) -> Option<WifiStationSample> {
+        let finished = std::mem::take(&mut self.builder)?;
+        finished.build()
     }
 }
 
