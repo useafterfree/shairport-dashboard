@@ -1,5 +1,5 @@
 use base64::{Engine as _, engine::general_purpose};
-use rust_stats::models::{SampleEvent, ShairportMetadataSample};
+use shairport_dashboard::models::{SampleEvent, ShairportMetadataSample};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::time::{SystemTime, UNIX_EPOCH};

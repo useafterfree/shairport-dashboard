@@ -1,5 +1,5 @@
 use regex::Regex;
-use rust_stats::models::{SampleEvent, ShairportSample};
+use shairport_dashboard::models::{SampleEvent, ShairportSample};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 use tokio::sync::broadcast;

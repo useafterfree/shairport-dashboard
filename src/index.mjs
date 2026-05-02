@@ -38,18 +38,18 @@ function keepLastN(points, value, size = MAX_POINTS) {
     return [...points, value].slice(-size);
 }
 
-function parseShairportTime(timestamp) {
+function parseShairportTime(timestamp, recordedAtMs) {
     const parsed = Date.parse(timestamp);
     if (Number.isNaN(parsed)) {
-        return Date.now();
+        return recordedAtMs || Date.now();
     }
 
     return parsed;
 }
 
-function pushShairport(sample) {
+function pushShairport(sample, recordedAtMs) {
     state.latestShairport = sample;
-    const x = parseShairportTime(sample.timestamp);
+    const x = parseShairportTime(sample.timestamp, recordedAtMs);
     state.shairportSeries.av_sync_error_ms = keepLastN(state.shairportSeries.av_sync_error_ms, {
         x,
         y: sample.av_sync_error_ms,
@@ -91,9 +91,9 @@ function pushShairportMetadata(sample) {
     };
 }
 
-function pushWifi(sample) {
+function pushWifi(sample, recordedAtMs) {
     state.latestWifi = sample;
-    const x = sample.current_time_ms || Date.now();
+    const x = sample.current_time_ms || recordedAtMs || Date.now();
     state.wifiSeries.signal_dbm = keepLastN(state.wifiSeries.signal_dbm, {
         x,
         y: sample.signal_dbm,
@@ -112,9 +112,9 @@ function pushWifi(sample) {
     });
 }
 
-function pushSystem(sample) {
+function pushSystem(sample, recordedAtMs) {
     state.latestSystem = sample;
-    const x = sample.timestamp_ms || Date.now();
+    const x = sample.timestamp_ms || recordedAtMs || Date.now();
 
     state.systemSeries.cpu_temp_c = keepLastN(state.systemSeries.cpu_temp_c, {
         x,
@@ -272,7 +272,7 @@ function App(props) {
     return html`
     <main>
         <section class="title-row">
-            <h1>Raspberry Pi Stats Live</h1>
+            <h1>Shairport Dashboard</h1>
             <p>Realtime shairport and wlan0 station telemetry</p>
         </section>
 
@@ -454,14 +454,15 @@ function connect() {
 
     ws.onmessage = (ev) => {
         let event = JSON.parse(ev.data);
+        const recordedAtMs = event.recorded_at_ms;
         if (event.kind === "Shairport") {
-            pushShairport(event.payload);
+            pushShairport(event.payload, recordedAtMs);
         }
         if (event.kind === "WifiStation") {
-            pushWifi(event.payload);
+            pushWifi(event.payload, recordedAtMs);
         }
         if (event.kind === "System") {
-            pushSystem(event.payload);
+            pushSystem(event.payload, recordedAtMs);
         }
         if (event.kind === "ShairportMetadata") {
             pushShairportMetadata(event.payload);

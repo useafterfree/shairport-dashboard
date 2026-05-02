@@ -1,6 +1,6 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct WifiStationSample {
     pub station_mac: String,
     pub interface_name: String,
@@ -26,7 +26,7 @@ pub struct WifiStationSample {
     pub current_time_ms: u64,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ShairportSample {
     pub timestamp: String,
     pub av_sync_error_ms: f64,
@@ -38,7 +38,7 @@ pub struct ShairportSample {
     pub fps_c: Option<f64>,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct SystemSample {
     pub timestamp_ms: u64,
     pub cpu_temp_c: f64,
@@ -49,7 +49,7 @@ pub struct SystemSample {
     pub throttled_now: Option<bool>,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ShairportMetadataSample {
     pub timestamp_ms: u64,
     pub track: Option<String>,
@@ -59,7 +59,7 @@ pub struct ShairportMetadataSample {
     pub artwork_base64: Option<String>,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "kind", content = "payload")]
 pub enum SampleEvent {
     Shairport(ShairportSample),

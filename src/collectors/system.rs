@@ -1,4 +1,4 @@
-use rust_stats::models::{SampleEvent, SystemSample};
+use shairport_dashboard::models::{SampleEvent, SystemSample};
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::process::Command;

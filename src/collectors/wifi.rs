@@ -1,5 +1,5 @@
-use rust_stats::WifiStationParser;
-use rust_stats::models::SampleEvent;
+use shairport_dashboard::WifiStationParser;
+use shairport_dashboard::models::SampleEvent;
 use tokio::process::Command;
 use tokio::sync::broadcast;
 use tokio::time::{Duration, MissedTickBehavior, interval};
