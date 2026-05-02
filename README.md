@@ -4,6 +4,89 @@ Realtime dashboard for Raspberry Pi audio + system telemetry, built with Rust (A
 
 ![Hero View](media/hero.jpe)
 
+## Quick Start
+
+These steps are the shortest path from a fresh machine to a running dashboard.
+
+### 1. Install system packages
+
+On Debian or Raspberry Pi OS:
+
+```bash
+sudo apt update
+sudo apt install -y git curl build-essential pkg-config make
+```
+
+### 2. Install Rust
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source "$HOME/.cargo/env"
+```
+
+Verify it worked:
+
+```bash
+rustc --version
+cargo --version
+```
+
+### 3. Clone the repo
+
+```bash
+git clone git@github.com:useafterfree/shairport-dashboard.git
+cd shairport-dashboard
+```
+
+If you prefer HTTPS:
+
+```bash
+git clone https://github.com/useafterfree/shairport-dashboard.git
+cd shairport-dashboard
+```
+
+### 4. Run it locally
+
+```bash
+make run
+```
+
+Then open:
+
+- `http://localhost:3000`
+
+### 5. Install it as a service
+
+```bash
+make install
+```
+
+That installs:
+
+- the binary to `/usr/local/bin/shairport-dashboard`
+- the web assets to `/usr/local/share/shairport-dashboard`
+- the systemd unit to `/etc/systemd/system/shairport-dashboard.service`
+
+After install, check status with:
+
+```bash
+sudo systemctl status shairport-dashboard.service
+```
+
+To remove it later:
+
+```bash
+make uninstall
+```
+
+## Make Targets
+
+- `make build` builds the release binary
+- `make run` runs the app locally from the repo
+- `make install` installs the binary, static assets, and systemd service
+- `make uninstall` removes the installed binary, assets, and service
+- `make reinstall` runs uninstall and install back to back
+
 ## What This App Does
 
 - Streams shairport-sync timing metrics from systemd logs
@@ -129,6 +212,8 @@ Open dashboard:
 
 - `http://localhost:3000`
 
+Local development reads frontend assets directly from `src/`.
+
 ## Install as a Service
 
 The repo includes a systemd unit file and Makefile targets:
@@ -140,7 +225,10 @@ make install
 This installs:
 
 - Binary to `/usr/local/bin/shairport-dashboard`
+- Web assets to `/usr/local/share/shairport-dashboard`
 - Service unit to `/etc/systemd/system/shairport-dashboard.service`
+
+The installed systemd service sets `SHAIRPORT_DASHBOARD_ASSET_DIR=/usr/local/share/shairport-dashboard` so the binary serves the copied assets instead of the repo-local `src/` files.
 
 To remove:
 

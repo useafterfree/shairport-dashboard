@@ -1,6 +1,8 @@
 .PHONY: build run install uninstall
 
 BINARY := shairport-dashboard
+ASSET_DIR := /usr/local/share/$(BINARY)
+ASSETS := src/index.html src/index.mjs src/index.css
 
 build:
 	cargo build --release
@@ -9,15 +11,20 @@ run:
 	cargo run --release
 
 install: build
-	install -m 755 target/release/$(BINARY) /usr/local/bin/$(BINARY)
-	install -m 644 $(BINARY).service /etc/systemd/system/$(BINARY).service
-	systemctl daemon-reload
-	systemctl enable $(BINARY).service
-	systemctl restart $(BINARY).service
+	sudo install -m 755 target/release/$(BINARY) /usr/local/bin/$(BINARY)
+	sudo install -d $(ASSET_DIR)
+	sudo install -m 644 $(ASSETS) $(ASSET_DIR)/
+	sudo install -m 644 $(BINARY).service /etc/systemd/system/$(BINARY).service
+	sudo systemctl daemon-reload
+	sudo systemctl enable $(BINARY).service
+	sudo systemctl restart $(BINARY).service
 
 uninstall:
-	systemctl stop $(BINARY).service || true
-	systemctl disable $(BINARY).service || true
-	rm -f /usr/local/bin/$(BINARY)
-	rm -f /etc/systemd/system/$(BINARY).service
-	systemctl daemon-reload
+	sudo systemctl stop $(BINARY).service || true
+	sudo systemctl disable $(BINARY).service || true
+	sudo rm -f /usr/local/bin/$(BINARY)
+	sudo rm -rf $(ASSET_DIR)
+	sudo rm -f /etc/systemd/system/$(BINARY).service
+	sudo systemctl daemon-reload
+
+reinstall: uninstall install

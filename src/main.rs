@@ -16,6 +16,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::net::TcpListener;
@@ -136,6 +137,14 @@ impl HistoryState {
 
 fn history_path() -> String {
     format!("/tmp/{}.history", env!("CARGO_PKG_NAME"))
+}
+
+fn asset_path(name: &str) -> PathBuf {
+    if let Ok(dir) = std::env::var("SHAIRPORT_DASHBOARD_ASSET_DIR") {
+        return PathBuf::from(dir).join(name);
+    }
+
+    PathBuf::from("src").join(name)
 }
 
 fn has_track_data(metadata: &ShairportMetadataSample) -> bool {
@@ -266,14 +275,18 @@ async fn main() {
 
 #[axum::debug_handler]
 async fn root_get() -> impl IntoResponse {
-    let markup = tokio::fs::read_to_string("src/index.html").await.unwrap();
+    let markup = tokio::fs::read_to_string(asset_path("index.html"))
+        .await
+        .unwrap();
 
     Html(markup)
 }
 
 #[axum::debug_handler]
 async fn indexmjs_get() -> impl IntoResponse {
-    let markup = tokio::fs::read_to_string("src/index.mjs").await.unwrap();
+    let markup = tokio::fs::read_to_string(asset_path("index.mjs"))
+        .await
+        .unwrap();
 
     Response::builder()
         .header("content-type", "application/javascript;charset=utf-8")
@@ -283,7 +296,9 @@ async fn indexmjs_get() -> impl IntoResponse {
 
 #[axum::debug_handler]
 async fn indexcss_get() -> impl IntoResponse {
-    let markup = tokio::fs::read_to_string("src/index.css").await.unwrap();
+    let markup = tokio::fs::read_to_string(asset_path("index.css"))
+        .await
+        .unwrap();
 
     Response::builder()
         .header("content-type", "text/css;charset=utf-8")

@@ -5,6 +5,7 @@ Wants=shairport-sync.service
 
 [Service]
 Type=simple
+Environment=SHAIRPORT_DASHBOARD_ASSET_DIR=/usr/local/share/shairport-dashboard
 ExecStart=/usr/local/bin/shairport-dashboard
 Restart=on-failure
 RestartSec=5s
