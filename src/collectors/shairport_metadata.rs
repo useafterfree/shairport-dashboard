@@ -208,7 +208,11 @@ fn decode_xml_hex(raw: &str) -> String {
 
 fn decode_xml_b64_utf8(raw: &str) -> String {
     let trimmed = raw.trim();
-    match general_purpose::STANDARD.decode(trimmed) {
+    let normalized: String = trimmed
+        .chars()
+        .filter(|ch| !ch.is_ascii_whitespace())
+        .collect();
+    match general_purpose::STANDARD.decode(&normalized) {
         Ok(bytes) => String::from_utf8(bytes).unwrap_or_else(|_| trimmed.to_string()),
         Err(_) => trimmed.to_string(),
     }
@@ -219,4 +223,148 @@ fn now_ms() -> u64 {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_millis() as u64)
         .unwrap_or(0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn b64(input: &str) -> String {
+        general_purpose::STANDARD.encode(input)
+    }
+
+    #[test]
+    fn extracts_tag_content_with_attributes() {
+        let line = r#"<item><type encoding="hex">636f7265</type></item>"#;
+
+        assert_eq!(
+            extract_tag_content(line, "type"),
+            Some("636f7265".to_string())
+        );
+    }
+
+    #[test]
+    fn decodes_hex_and_base64_helpers() {
+        assert_eq!(decode_xml_hex("636f7265"), "core");
+        assert_eq!(decode_xml_b64_utf8(&b64("Shape of You")), "Shape of You");
+        assert_eq!(decode_xml_b64_utf8("not-base64"), "not-base64");
+    }
+
+    #[test]
+    fn parses_multiline_track_data_and_emits_metadata() {
+        let mut parser = MetadataParserState::default();
+        let lines = [
+            "<item>",
+            "<type>636f7265</type>",
+            "<code>6d696e6d</code>",
+            "<data encoding=\"base64\">U2hh",
+            "cGUgb2YgWW91",
+            "</data>",
+        ];
+
+        let mut emitted = None;
+        for line in lines {
+            if let Some(sample) = parser.parse_line(line) {
+                emitted = Some(sample);
+            }
+        }
+
+        let sample = emitted.expect("expected metadata sample");
+        assert_eq!(sample.track.as_deref(), Some("Shape of You"));
+        assert_eq!(sample.artist, None);
+        assert_eq!(sample.album, None);
+        assert_eq!(sample.artwork_base64, None);
+    }
+
+    #[test]
+    fn does_not_emit_duplicate_track_metadata() {
+        let mut parser = MetadataParserState::default();
+        let track = b64("Shape of You");
+
+        parser.current_type = "core".to_string();
+        parser.current_code = "minm".to_string();
+        let first = parser.process_data(&track);
+        let second = parser.process_data(&track);
+
+        assert!(first.is_some());
+        assert!(second.is_none());
+    }
+
+    #[test]
+    fn emits_when_artwork_arrives_after_track_metadata() {
+        let mut parser = MetadataParserState::default();
+
+        parser.current_type = "core".to_string();
+        parser.current_code = "minm".to_string();
+        let first = parser.process_data(&b64("Shape of You"));
+
+        parser.current_type = "ssnc".to_string();
+        parser.current_code = "PICT".to_string();
+        let artwork = parser.process_data("image-data-base64");
+        let duplicate_artwork = parser.process_data("image-data-base64");
+
+        assert!(first.is_some());
+        let artwork_sample = artwork.expect("expected artwork update");
+        assert_eq!(artwork_sample.track.as_deref(), Some("Shape of You"));
+        assert_eq!(
+            artwork_sample.artwork_base64.as_deref(),
+            Some("image-data-base64")
+        );
+        assert!(duplicate_artwork.is_none());
+    }
+
+    #[test]
+    fn batches_artist_seen_before_track_into_emitted_sample() {
+        let mut parser = MetadataParserState::default();
+
+        parser.current_type = "core".to_string();
+        parser.current_code = "asar".to_string();
+        assert!(parser.process_data(&b64("Ed Sheeran")).is_none());
+
+        parser.current_code = "minm".to_string();
+        let sample = parser
+            .process_data(&b64("Shape of You"))
+            .expect("expected track emission");
+
+        assert_eq!(sample.track.as_deref(), Some("Shape of You"));
+        assert_eq!(sample.artist.as_deref(), Some("Ed Sheeran"));
+    }
+
+    #[test]
+    fn ignores_malformed_tags_without_updating_parser_state() {
+        let mut parser = MetadataParserState::default();
+
+        assert!(parser.parse_line("<type>636f7265").is_none());
+        assert!(parser.parse_line("<code>6d696e6d").is_none());
+        assert!(parser.current_type.is_empty());
+        assert!(parser.current_code.is_empty());
+
+        assert!(
+            parser
+                .parse_line("<data encoding=\"base64\">U2hhcGU=</data>")
+                .is_none()
+        );
+        assert!(parser.track.is_none());
+    }
+
+    #[test]
+    fn closing_item_clears_type_and_code_context() {
+        let mut parser = MetadataParserState::default();
+
+        assert!(parser.parse_line("<type>636f7265</type>").is_none());
+        assert!(parser.parse_line("<code>6d696e6d</code>").is_none());
+        assert_eq!(parser.current_type, "core");
+        assert_eq!(parser.current_code, "minm");
+
+        assert!(parser.parse_line("</item>").is_none());
+        assert!(parser.current_type.is_empty());
+        assert!(parser.current_code.is_empty());
+
+        assert!(
+            parser
+                .parse_line("<data encoding=\"base64\">U2hhcGUgb2YgWW91</data>")
+                .is_none()
+        );
+        assert!(parser.track.is_none());
+    }
 }

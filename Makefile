@@ -1,4 +1,4 @@
-.PHONY: build run install uninstall
+.PHONY: build run check test install uninstall
 
 BINARY := shairport-dashboard
 ASSET_DIR := /usr/local/share/$(BINARY)
@@ -9,6 +9,12 @@ build:
 
 run:
 	cargo run --release
+
+check:
+	cargo check
+
+test:
+	cargo test
 
 install: build
 	sudo install -m 755 target/release/$(BINARY) /usr/local/bin/$(BINARY)
