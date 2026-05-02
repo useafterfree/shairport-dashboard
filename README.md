@@ -256,3 +256,17 @@ make uninstall
 ### Stats
 
 ![Stats View](media/stats.jpe)
+
+## Acknowledgements
+
+Thank you to the shairport-sync project by Mike Brady:
+
+- https://github.com/mikebrady/shairport-sync
+
+A huge shoutout as well to the shairport metadata parser work in shairport-view-rs, which helped inform the metadata parsing approach here:
+
+- https://github.com/michaels4208/shairport-view-rs
+
+And a shoutout to fasterthanlime's axact project as well:
+
+- https://github.com/fasterthanlime/axact
