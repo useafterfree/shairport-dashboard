@@ -1,0 +1,14 @@
+[Unit]
+Description=Shairport Dashboard
+After=network.target shairport-sync.service
+Wants=shairport-sync.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/shairport-dashboard
+Restart=on-failure
+RestartSec=5s
+User=lomf
+
+[Install]
+WantedBy=multi-user.target

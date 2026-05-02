@@ -279,38 +279,39 @@ function App(props) {
         <section class="meta-grid">
             <article key=${`top-now-playing-${props.state.nowPlayingPulseToken}`} class=${`meta-card ${nowPlayingPulseClass}`}>
                 <h2>Now Playing</h2>
-                <p>Track: ${latestShairportMetadata?.track || "-"}</p>
-                <p>Artist: ${latestShairportMetadata?.artist || "-"}</p>
-                <p>Album: ${latestShairportMetadata?.album || "-"}</p>
-                <p>Genre: ${latestShairportMetadata?.genre || "-"}</p>
+                <div class="meta-card-rows">
+                    <span class="lbl">Track</span><span class="val">${latestShairportMetadata?.track || "-"}</span>
+                    <span class="lbl">Artist</span><span class="val">${latestShairportMetadata?.artist || "-"}</span>
+                    <span class="lbl">Album</span><span class="val">${latestShairportMetadata?.album || "-"}</span>
+                    <span class="lbl">Genre</span><span class="val">${latestShairportMetadata?.genre || "-"}</span>
+                </div>
             </article>
             <article class="meta-card">
                 <h2>Wi-Fi Station</h2>
-                <p>MAC: ${latestWifi ? latestWifi.station_mac : "-"}</p>
-                <p>Interface: ${latestWifi ? latestWifi.interface_name : "-"}</p>
-                <p>Connected: ${latestWifi ? `${latestWifi.connected_time_seconds}s` : "-"}</p>
-                <p>Tx Failed: ${latestWifi ? latestWifi.tx_failed : "-"}</p>
+                <div class="meta-card-rows">
+                    <span class="lbl">MAC</span><span class="val">${latestWifi ? latestWifi.station_mac : "-"}</span>
+                    <span class="lbl">Interface</span><span class="val">${latestWifi ? latestWifi.interface_name : "-"}</span>
+                    <span class="lbl">Connected</span><span class="val">${latestWifi ? `${latestWifi.connected_time_seconds}s` : "-"}</span>
+                    <span class="lbl">Tx Failed</span><span class="val">${latestWifi ? latestWifi.tx_failed : "-"}</span>
+                </div>
             </article>
             <article class="meta-card">
                 <h2>Shairport</h2>
-                <p>Timestamp: ${latestShairport ? latestShairport.timestamp : "-"}</p>
-                <p>Missing: ${latestShairport ? latestShairport.missing : "-"}</p>
-                <p>Resend: ${latestShairport ? latestShairport.resend : "-"}</p>
+                <div class="meta-card-rows">
+                    <span class="lbl">Timestamp</span><span class="val">${latestShairport ? latestShairport.timestamp : "-"}</span>
+                    <span class="lbl">Missing</span><span class="val">${latestShairport ? latestShairport.missing : "-"}</span>
+                    <span class="lbl">Resend</span><span class="val">${latestShairport ? latestShairport.resend : "-"}</span>
+                </div>
             </article>
             <article class="meta-card">
                 <h2>Raspberry Pi 5 System</h2>
-                <p>CPU Temp: ${latestSystem ? `${fmt(latestSystem.cpu_temp_c)} C` : "-"}</p>
-                <p>CPU Usage: ${latestSystem ? `${fmt(latestSystem.cpu_usage_pct)} %` : "-"}</p>
-                <p>RAM Usage: ${latestSystem ? `${fmt(latestSystem.ram_usage_pct)} %` : "-"}</p>
-                <p>Fan: ${latestSystem ? `${latestSystem.fan_speed_rpm ?? "-"} rpm` : "-"}</p>
-                <p>
-                    Throttled:
-                    ${latestSystem && latestSystem.throttled_now !== null
-            ? latestSystem.throttled_now
-                ? "yes"
-                : "no"
-            : "unknown"}
-                </p>
+                <div class="meta-card-rows">
+                    <span class="lbl">CPU Temp</span><span class="val">${latestSystem ? `${fmt(latestSystem.cpu_temp_c)} C` : "-"}</span>
+                    <span class="lbl">CPU Usage</span><span class="val">${latestSystem ? `${fmt(latestSystem.cpu_usage_pct)} %` : "-"}</span>
+                    <span class="lbl">RAM Usage</span><span class="val">${latestSystem ? `${fmt(latestSystem.ram_usage_pct)} %` : "-"}</span>
+                    <span class="lbl">Fan</span><span class="val">${latestSystem ? `${latestSystem.fan_speed_rpm ?? "-"} rpm` : "-"}</span>
+                    <span class="lbl">Throttled</span><span class="val">${latestSystem && latestSystem.throttled_now !== null ? (latestSystem.throttled_now ? "yes" : "no") : "unknown"}</span>
+                </div>
             </article>
         </section>
 
@@ -322,10 +323,12 @@ function App(props) {
             <div class="shairport-meta-wrap">
                 <article key=${`stream-now-playing-${props.state.nowPlayingPulseToken}`} class=${`meta-card now-playing-card ${nowPlayingPulseClass}`}>
                     <h2>Track Metadata</h2>
-                    <p>Track: ${latestShairportMetadata?.track || "-"}</p>
-                    <p>Artist: ${latestShairportMetadata?.artist || "-"}</p>
-                    <p>Album: ${latestShairportMetadata?.album || "-"}</p>
-                    <p>Genre: ${latestShairportMetadata?.genre || "-"}</p>
+                    <div class="meta-card-rows">
+                        <span class="lbl">Track</span><span class="val">${latestShairportMetadata?.track || "-"}</span>
+                        <span class="lbl">Artist</span><span class="val">${latestShairportMetadata?.artist || "-"}</span>
+                        <span class="lbl">Album</span><span class="val">${latestShairportMetadata?.album || "-"}</span>
+                        <span class="lbl">Genre</span><span class="val">${latestShairportMetadata?.genre || "-"}</span>
+                    </div>
                 </article>
                 <article class="meta-card art-card">
                     <h2>Artwork</h2>
@@ -440,28 +443,33 @@ function redraw() {
     render(html`<${App} state=${state}></${App}>`, document.body);
 }
 
-let url = new URL("/ws", window.location.href);
-// http => ws
-// https => wss
-url.protocol = url.protocol.replace("http", "ws");
+const wsUrl = new URL("/ws", window.location.href);
+wsUrl.protocol = wsUrl.protocol.replace("http", "ws");
 
-let ws = new WebSocket(url.href);
-ws.onmessage = (ev) => {
-    let event = JSON.parse(ev.data);
-    if (event.kind === "Shairport") {
-        pushShairport(event.payload);
-    }
-    if (event.kind === "WifiStation") {
-        pushWifi(event.payload);
-    }
-    if (event.kind === "System") {
-        pushSystem(event.payload);
-    }
-    if (event.kind === "ShairportMetadata") {
-        pushShairportMetadata(event.payload);
-    }
+function connect() {
+    const ws = new WebSocket(wsUrl.href);
 
-    redraw();
-};
+    ws.onopen = () => redraw();
 
-ws.onopen = () => redraw();
+    ws.onmessage = (ev) => {
+        let event = JSON.parse(ev.data);
+        if (event.kind === "Shairport") {
+            pushShairport(event.payload);
+        }
+        if (event.kind === "WifiStation") {
+            pushWifi(event.payload);
+        }
+        if (event.kind === "System") {
+            pushSystem(event.payload);
+        }
+        if (event.kind === "ShairportMetadata") {
+            pushShairportMetadata(event.payload);
+        }
+        redraw();
+    };
+
+    ws.onclose = () => setTimeout(connect, 1000);
+    ws.onerror = () => ws.close();
+}
+
+connect();
