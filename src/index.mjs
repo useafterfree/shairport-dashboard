@@ -78,6 +78,14 @@ function initTheme() {
     applyTheme(savedTheme, false);
 }
 
+function getChartColors() {
+    const style = getComputedStyle(document.body);
+    const lineColor = style.getPropertyValue("--line").trim();
+    const mutedColor = style.getPropertyValue("--muted").trim();
+    const gridColor = style.getPropertyValue("--chart-grid").trim();
+    return { lineColor, mutedColor, gridColor };
+}
+
 function downsampleSeries(points, maxPoints) {
     if (!Array.isArray(points) || points.length <= maxPoints) {
         return points || [];
@@ -331,6 +339,8 @@ function MetricChart(props) {
             return;
         }
 
+        const { lineColor, mutedColor, gridColor } = getChartColors();
+
         chartRef.current = new ChartJS(canvasRef.current, {
             type: "line",
             data: {
@@ -338,7 +348,8 @@ function MetricChart(props) {
                     {
                         data: props.points || [],
                         parsing: false,
-                        borderColor: "#b8ffe9",
+                        borderColor: lineColor,
+                        pointBackgroundColor: lineColor,
                         borderWidth: 1.4,
                         pointRadius: 2,
                         pointHoverRadius: 3,
@@ -368,21 +379,21 @@ function MetricChart(props) {
                     x: {
                         type: "linear",
                         ticks: {
-                            color: "#9bc7cd",
+                            color: mutedColor,
                             callback(value) {
                                 return new Date(Number(value)).toLocaleTimeString();
                             },
                             maxTicksLimit: 4,
                         },
                         grid: {
-                            color: "rgba(167, 213, 222, 0.14)",
+                            color: gridColor,
                         },
                     },
                     y: {
                         min: props.yMin,
                         max: props.yMax,
                         ticks: {
-                            color: "#9bc7cd",
+                            color: mutedColor,
                             stepSize: props.yStep,
                             callback(value) {
                                 if (props.yTickFormatter) {
@@ -392,7 +403,7 @@ function MetricChart(props) {
                             },
                         },
                         grid: {
-                            color: "rgba(167, 213, 222, 0.12)",
+                            color: gridColor,
                         },
                     },
                 },
@@ -404,7 +415,7 @@ function MetricChart(props) {
                 chartRef.current.destroy();
             }
         };
-    }, []);
+    }, [props.theme]);
 
     useEffect(() => {
         if (!chartRef.current) {
@@ -549,26 +560,31 @@ function App(props) {
             </div>
             <div class="chart-grid">
                 <${MetricChart}
+                    theme=${props.state.theme}
                     title="AV Sync Error (ms)"
                     value=${latestShairport ? `${fmt(latestShairport.av_sync_error_ms)} ms` : "-"}
                     points=${props.state.shairportSeries.av_sync_error_ms}
                 />
                 <${MetricChart}
+                    theme=${props.state.theme}
                     title="PPM"
                     value=${latestShairport ? fmt(latestShairport.ppm) : "-"}
                     points=${props.state.shairportSeries.ppm}
                 />
                 <${MetricChart}
+                    theme=${props.state.theme}
                     title="Sync Window (ms)"
                     value=${latestShairport ? `${fmt(latestShairport.sync_window_ms)} ms` : "-"}
                     points=${props.state.shairportSeries.sync_window_ms}
                 />
                 <${MetricChart}
+                    theme=${props.state.theme}
                     title="Missing"
                     value=${latestShairport ? fmt(latestShairport.missing, 0) : "-"}
                     points=${props.state.shairportSeries.missing}
                 />
                 <${MetricChart}
+                    theme=${props.state.theme}
                     title="Resend"
                     value=${latestShairport ? fmt(latestShairport.resend, 0) : "-"}
                     points=${props.state.shairportSeries.resend}
@@ -585,11 +601,13 @@ function App(props) {
             </header>
             <div class="chart-grid">
                 <${MetricChart}
+                    theme=${props.state.theme}
                     title="CPU Temp (C)"
                     value=${latestSystem ? `${fmt(latestSystem.cpu_temp_c)} C` : "-"}
                     points=${props.state.systemSeries.cpu_temp_c}
                 />
                 <${MetricChart}
+                    theme=${props.state.theme}
                     title="CPU Usage (%)"
                     value=${latestSystem ? `${fmt(latestSystem.cpu_usage_pct)} %` : "-"}
                     points=${props.state.systemSeries.cpu_usage_pct}
@@ -597,6 +615,7 @@ function App(props) {
                     yMax=${100}
                 />
                 <${MetricChart}
+                    theme=${props.state.theme}
                     title="RAM Usage (%)"
                     value=${latestSystem ? `${fmt(latestSystem.ram_usage_pct)} %` : "-"}
                     points=${props.state.systemSeries.ram_usage_pct}
@@ -604,6 +623,7 @@ function App(props) {
                     yMax=${100}
                 />
                 <${MetricChart}
+                    theme=${props.state.theme}
                     title="Fan Speed (RPM)"
                     value=${latestSystem && latestSystem.fan_speed_rpm != null
             ? `${latestSystem.fan_speed_rpm} rpm`
@@ -611,6 +631,7 @@ function App(props) {
                     points=${props.state.systemSeries.fan_speed_rpm}
                 />
                 <${MetricChart}
+                    theme=${props.state.theme}
                     title="Processor Throttled"
                     value=${latestSystem && latestSystem.throttled_now !== null
             ? latestSystem.throttled_now
@@ -634,21 +655,25 @@ function App(props) {
             </header>
             <div class="chart-grid">
                 <${MetricChart}
+                    theme=${props.state.theme}
                     title="Signal (dBm)"
                     value=${latestWifi ? `${fmt(latestWifi.signal_dbm, 0)} dBm` : "-"}
                     points=${props.state.wifiSeries.signal_dbm}
                 />
                 <${MetricChart}
+                    theme=${props.state.theme}
                     title="TX Bitrate (MBit/s)"
                     value=${latestWifi ? `${fmt(latestWifi.tx_bitrate_mbit_s)} Mb/s` : "-"}
                     points=${props.state.wifiSeries.tx_bitrate_mbit_s}
                 />
                 <${MetricChart}
+                    theme=${props.state.theme}
                     title="RX Bitrate (MBit/s)"
                     value=${latestWifi ? `${fmt(latestWifi.rx_bitrate_mbit_s)} Mb/s` : "-"}
                     points=${props.state.wifiSeries.rx_bitrate_mbit_s}
                 />
                 <${MetricChart}
+                    theme=${props.state.theme}
                     title="TX Failed"
                     value=${latestWifi ? fmt(latestWifi.tx_failed, 0) : "-"}
                     points=${props.state.wifiSeries.tx_failed}

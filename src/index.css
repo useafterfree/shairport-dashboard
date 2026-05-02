@@ -15,6 +15,7 @@
     --muted: #9bc7cd;
     --accent: #53d2b3;
     --line: #77f7d8;
+    --chart-grid: rgba(167, 213, 222, 0.13);
 }
 
 * {
@@ -53,6 +54,7 @@ body[data-theme="purple"] {
     --muted: #c7afe8;
     --accent: #d49dff;
     --line: #e3c0ff;
+    --chart-grid: rgba(180, 130, 255, 0.14);
 }
 
 body[data-theme="high-contrast"] {
@@ -67,6 +69,7 @@ body[data-theme="high-contrast"] {
     --muted: #f5f5f5;
     --accent: #ffff00;
     --line: #ffff00;
+    --chart-grid: rgba(255, 255, 0, 0.18);
 }
 
 body[data-theme="black-white"] {
@@ -81,6 +84,7 @@ body[data-theme="black-white"] {
     --muted: #2e2e2e;
     --accent: #000000;
     --line: #111111;
+    --chart-grid: rgba(0, 0, 0, 0.12);
 }
 
 main {
