@@ -10,6 +10,7 @@ pub async fn stream_wlan_station_dump(tx: broadcast::Sender<SampleEvent>) {
 
     loop {
         ticker.tick().await;
+        let power_save_enabled = read_power_save_enabled().await;
 
         let output = match Command::new("iw")
             .args(["dev", "wlan0", "station", "dump"])
@@ -33,13 +34,39 @@ pub async fn stream_wlan_station_dump(tx: broadcast::Sender<SampleEvent>) {
         let mut parser = WifiStationParser::new();
 
         for raw_line in stdout.lines() {
-            if let Some(sample) = parser.parse_line(raw_line) {
+            if let Some(mut sample) = parser.parse_line(raw_line) {
+                sample.power_save_enabled = power_save_enabled;
                 let _ = tx.send(SampleEvent::WifiStation(sample));
             }
         }
 
-        if let Some(sample) = parser.finish() {
+        if let Some(mut sample) = parser.finish() {
+            sample.power_save_enabled = power_save_enabled;
             let _ = tx.send(SampleEvent::WifiStation(sample));
         }
     }
+}
+
+async fn read_power_save_enabled() -> Option<bool> {
+    let output = Command::new("iw")
+        .args(["dev", "wlan0", "get", "power_save"])
+        .output()
+        .await
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for line in stdout.lines() {
+        let value = line.trim().strip_prefix("Power save:")?.trim();
+        return match value {
+            "on" => Some(true),
+            "off" => Some(false),
+            _ => None,
+        };
+    }
+
+    None
 }

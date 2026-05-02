@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 pub struct WifiStationSample {
     pub station_mac: String,
     pub interface_name: String,
+    pub power_save_enabled: Option<bool>,
     pub inactive_time_ms: u64,
     pub rx_bytes: u64,
     pub rx_packets: u64,

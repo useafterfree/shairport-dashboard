@@ -91,7 +91,7 @@ make uninstall
 
 - Streams shairport-sync timing metrics from systemd logs
 - Streams shairport metadata (track, artist, album, genre, artwork)
-- Streams Wi-Fi station metrics from `iw dev wlan0 station dump`
+- Streams Wi-Fi station metrics from `iw dev wlan0 station dump`, including power-save status
 - Streams Raspberry Pi system metrics (CPU temp, CPU/RAM usage, fan RPM, throttling)
 - Pushes all samples to the browser over WebSocket for live charts
 - Persists recent history so reconnecting clients get immediate context
@@ -116,6 +116,7 @@ Collectors run as independent Tokio tasks and emit typed samples as `SampleEvent
   - Decodes XML/hex payload fields and optional artwork
 - `src/collectors/wifi.rs`
   - Polls `iw dev wlan0 station dump` every second
+  - Reads `iw dev wlan0 get power_save` to report whether Wi-Fi power save is enabled
   - Uses `WifiStationParser` from `src/lib.rs`
 - `src/collectors/system.rs`
   - Polls `/proc` and system interfaces every second

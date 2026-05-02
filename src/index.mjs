@@ -513,6 +513,7 @@ function App(props) {
                     <span class="lbl">MAC</span><span class="val">${latestWifi ? latestWifi.station_mac : "-"}</span>
                     <span class="lbl">Interface</span><span class="val">${latestWifi ? latestWifi.interface_name : "-"}</span>
                     <span class="lbl">Connected</span><span class="val">${latestWifi ? formatHms(latestWifi.connected_time_seconds) : "-"}</span>
+                    <span class="lbl">Power Save</span><span class="val">${latestWifi && latestWifi.power_save_enabled !== null ? (latestWifi.power_save_enabled ? "on" : "off") : "unknown"}</span>
                     <span class="lbl">Tx Failed</span><span class="val">${latestWifi ? latestWifi.tx_failed : "-"}</span>
                 </div>
             </article>

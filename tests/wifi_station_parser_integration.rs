@@ -1,4 +1,4 @@
-use rust_stats::WifiStationParser;
+use shairport_dashboard::WifiStationParser;
 
 #[test]
 fn parses_station_dump_snapshot_from_watch_output() {
@@ -19,6 +19,7 @@ fn parses_station_dump_snapshot_from_watch_output() {
         "        authenticated:  yes",
         "        associated:     yes",
         "        WMM/WME:        yes",
+        "        power save:     on",
         "        TDLS peer:      no",
         "        DTIM period:    3",
         "        beacon interval:108",
@@ -50,6 +51,7 @@ fn parses_station_dump_snapshot_from_watch_output() {
     assert!(sample.authorized);
     assert!(sample.authenticated);
     assert!(sample.associated);
+    assert_eq!(sample.power_save_enabled, Some(true));
     assert!(!sample.tdls_peer);
     assert_eq!(sample.connected_time_seconds, 2191);
     assert_eq!(sample.current_time_ms, 1777675105798);
@@ -72,6 +74,7 @@ fn parses_station_dump_snapshot_from_plain_iw_output() {
         "\tauthenticated:\tyes",
         "\tassociated:\tyes",
         "\tWMM/WME:\tyes",
+        "\tpower save:\toff",
         "\tTDLS peer:\tno",
         "\tDTIM period:\t3",
         "\tbeacon interval:\t108",
@@ -95,6 +98,7 @@ fn parses_station_dump_snapshot_from_plain_iw_output() {
     assert_eq!(sample.station_mac, "3a:98:b5:31:9d:34");
     assert_eq!(sample.interface_name, "wlan0");
     assert_eq!(sample.signal_dbm, -36);
+    assert_eq!(sample.power_save_enabled, Some(false));
     assert_eq!(sample.tx_bitrate_mbit_s, 65.0);
     assert_eq!(sample.rx_bitrate_mbit_s, 72.2);
     assert_eq!(sample.current_time_ms, 1777675105798);

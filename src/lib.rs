@@ -5,6 +5,7 @@ pub use models::WifiStationSample;
 struct WifiStationSampleBuilder {
     station_mac: Option<String>,
     interface_name: Option<String>,
+    power_save_enabled: Option<bool>,
     inactive_time_ms: Option<u64>,
     rx_bytes: Option<u64>,
     rx_packets: Option<u64>,
@@ -37,6 +38,7 @@ impl WifiStationSampleBuilder {
         Some(WifiStationSample {
             station_mac: self.station_mac?,
             interface_name: self.interface_name?,
+            power_save_enabled: self.power_save_enabled,
             inactive_time_ms: self.inactive_time_ms.unwrap_or(0),
             rx_bytes: self.rx_bytes.unwrap_or(0),
             rx_packets: self.rx_packets.unwrap_or(0),
@@ -94,6 +96,7 @@ impl WifiStationParser {
         let value = value.trim();
 
         match key {
+            "power save" => active.power_save_enabled = parse_bool_flag(value),
             "inactive time" => active.inactive_time_ms = parse_first_token(value),
             "rx bytes" => active.rx_bytes = parse_first_token(value),
             "rx packets" => active.rx_packets = parse_first_token(value),
@@ -164,6 +167,14 @@ fn parse_bool_yes_no(value: &str) -> Option<bool> {
     match value {
         "yes" => Some(true),
         "no" => Some(false),
+        _ => None,
+    }
+}
+
+fn parse_bool_flag(value: &str) -> Option<bool> {
+    match value {
+        "yes" | "on" => Some(true),
+        "no" | "off" => Some(false),
         _ => None,
     }
 }
