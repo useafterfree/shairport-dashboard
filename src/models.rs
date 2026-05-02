@@ -55,6 +55,7 @@ pub struct ShairportMetadataSample {
     pub track: Option<String>,
     pub artist: Option<String>,
     pub album: Option<String>,
+    pub genre: Option<String>,
     pub artwork_base64: Option<String>,
 }
 

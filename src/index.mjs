@@ -282,12 +282,14 @@ function App(props) {
                 <p>Track: ${latestShairportMetadata?.track || "-"}</p>
                 <p>Artist: ${latestShairportMetadata?.artist || "-"}</p>
                 <p>Album: ${latestShairportMetadata?.album || "-"}</p>
+                <p>Genre: ${latestShairportMetadata?.genre || "-"}</p>
             </article>
             <article class="meta-card">
                 <h2>Wi-Fi Station</h2>
                 <p>MAC: ${latestWifi ? latestWifi.station_mac : "-"}</p>
                 <p>Interface: ${latestWifi ? latestWifi.interface_name : "-"}</p>
                 <p>Connected: ${latestWifi ? `${latestWifi.connected_time_seconds}s` : "-"}</p>
+                <p>Tx Failed: ${latestWifi ? latestWifi.tx_failed : "-"}</p>
             </article>
             <article class="meta-card">
                 <h2>Shairport</h2>
@@ -311,6 +313,47 @@ function App(props) {
                 </p>
             </article>
         </section>
+
+        <section class="stream-section">
+            <header class="stream-header">
+                <h2>Shairport Stream</h2>
+                <p>Audio sync drift and window behavior</p>
+            </header>
+            <div class="shairport-meta-wrap">
+                <article key=${`stream-now-playing-${props.state.nowPlayingPulseToken}`} class=${`meta-card now-playing-card ${nowPlayingPulseClass}`}>
+                    <h2>Track Metadata</h2>
+                    <p>Track: ${latestShairportMetadata?.track || "-"}</p>
+                    <p>Artist: ${latestShairportMetadata?.artist || "-"}</p>
+                    <p>Album: ${latestShairportMetadata?.album || "-"}</p>
+                    <p>Genre: ${latestShairportMetadata?.genre || "-"}</p>
+                </article>
+                <article class="meta-card art-card">
+                    <h2>Artwork</h2>
+                    ${latestShairportMetadata?.artwork_url
+            ? html`<img src=${latestShairportMetadata.artwork_url} alt="album art" class="art-image" />`
+            : html`<div class="art-placeholder">No art</div>`}
+                </article>
+            </div>
+            <div class="chart-grid">
+                <${MetricChart}
+                    title="AV Sync Error (ms)"
+                    value=${latestShairport ? `${fmt(latestShairport.av_sync_error_ms)} ms` : "-"}
+                    points=${props.state.shairportSeries.av_sync_error_ms}
+                />
+                <${MetricChart}
+                    title="PPM"
+                    value=${latestShairport ? fmt(latestShairport.ppm) : "-"}
+                    points=${props.state.shairportSeries.ppm}
+                />
+                <${MetricChart}
+                    title="Sync Window (ms)"
+                    value=${latestShairport ? `${fmt(latestShairport.sync_window_ms)} ms` : "-"}
+                    points=${props.state.shairportSeries.sync_window_ms}
+                />
+            </div>
+        </section>
+
+
 
         <section class="stream-section">
             <header class="stream-header">
@@ -386,44 +429,6 @@ function App(props) {
                     title="TX Failed"
                     value=${latestWifi ? fmt(latestWifi.tx_failed, 0) : "-"}
                     points=${props.state.wifiSeries.tx_failed}
-                />
-            </div>
-        </section>
-
-        <section class="stream-section">
-            <header class="stream-header">
-                <h2>Shairport Stream</h2>
-                <p>Audio sync drift and window behavior</p>
-            </header>
-            <div class="shairport-meta-wrap">
-                <article key=${`stream-now-playing-${props.state.nowPlayingPulseToken}`} class=${`meta-card now-playing-card ${nowPlayingPulseClass}`}>
-                    <h2>Track Metadata</h2>
-                    <p>Track: ${latestShairportMetadata?.track || "-"}</p>
-                    <p>Artist: ${latestShairportMetadata?.artist || "-"}</p>
-                    <p>Album: ${latestShairportMetadata?.album || "-"}</p>
-                </article>
-                <article class="meta-card art-card">
-                    <h2>Artwork</h2>
-                    ${latestShairportMetadata?.artwork_url
-            ? html`<img src=${latestShairportMetadata.artwork_url} alt="album art" class="art-image" />`
-            : html`<div class="art-placeholder">No art</div>`}
-                </article>
-            </div>
-            <div class="chart-grid">
-                <${MetricChart}
-                    title="AV Sync Error (ms)"
-                    value=${latestShairport ? `${fmt(latestShairport.av_sync_error_ms)} ms` : "-"}
-                    points=${props.state.shairportSeries.av_sync_error_ms}
-                />
-                <${MetricChart}
-                    title="PPM"
-                    value=${latestShairport ? fmt(latestShairport.ppm) : "-"}
-                    points=${props.state.shairportSeries.ppm}
-                />
-                <${MetricChart}
-                    title="Sync Window (ms)"
-                    value=${latestShairport ? `${fmt(latestShairport.sync_window_ms)} ms` : "-"}
-                    points=${props.state.shairportSeries.sync_window_ms}
                 />
             </div>
         </section>

@@ -15,9 +15,15 @@ struct MetadataParserState {
     track: Option<String>,
     artist: Option<String>,
     album: Option<String>,
+    genre: Option<String>,
     artwork_base64: Option<String>,
     data_buffer: String,
     in_data_tag: bool,
+    // Track last emitted state to avoid duplicate emissions
+    last_track: Option<String>,
+    last_artist: Option<String>,
+    last_album: Option<String>,
+    last_genre: Option<String>,
 }
 
 impl MetadataParserState {
@@ -79,38 +85,71 @@ impl MetadataParserState {
     }
 
     fn process_data(&mut self, data: &str) -> Option<ShairportMetadataSample> {
-        let mut changed = false;
+        let mut should_emit_for_artwork = false;
+        let mut field_changed = false;
+
         match (self.current_type.as_str(), self.current_code.as_str()) {
             ("core", "minm") => {
                 self.track = Some(decode_xml_b64_utf8(data));
-                changed = true;
+                field_changed = true;
             }
             ("core", "asar") => {
                 self.artist = Some(decode_xml_b64_utf8(data));
-                changed = true;
+                field_changed = true;
             }
             ("core", "asal") => {
                 self.album = Some(decode_xml_b64_utf8(data));
-                changed = true;
+                field_changed = true;
+            }
+            ("core", "asgn") => {
+                self.genre = Some(decode_xml_b64_utf8(data));
+                field_changed = true;
             }
             ("ssnc", "PICT") => {
-                self.artwork_base64 = Some(data.trim().to_string());
-                changed = true;
+                let new_artwork = data.trim().to_string();
+                // Emit if artwork is being added/updated and we have track info
+                if self.track.is_some() && self.artwork_base64 != Some(new_artwork.clone()) {
+                    self.artwork_base64 = Some(new_artwork);
+                    should_emit_for_artwork = true;
+                }
             }
             _ => {}
         }
 
-        if changed {
+        // Emit if track metadata changed OR if artwork was added
+        if field_changed && self.metadata_changed() {
+            self.last_track = self.track.clone();
+            self.last_artist = self.artist.clone();
+            self.last_album = self.album.clone();
+            self.last_genre = self.genre.clone();
+
             Some(ShairportMetadataSample {
                 timestamp_ms: now_ms(),
                 track: self.track.clone(),
                 artist: self.artist.clone(),
                 album: self.album.clone(),
+                genre: self.genre.clone(),
+                artwork_base64: self.artwork_base64.clone(),
+            })
+        } else if should_emit_for_artwork {
+            // Emit when artwork arrives after track metadata
+            Some(ShairportMetadataSample {
+                timestamp_ms: now_ms(),
+                track: self.track.clone(),
+                artist: self.artist.clone(),
+                album: self.album.clone(),
+                genre: self.genre.clone(),
                 artwork_base64: self.artwork_base64.clone(),
             })
         } else {
             None
         }
+    }
+
+    fn metadata_changed(&self) -> bool {
+        // Only emit when track changes (indicates new song)
+        // This batches all metadata fields (artist, album, genre, artwork) together
+        self.track != self.last_track
     }
 }
 
