@@ -62,10 +62,17 @@ pub struct ShairportMetadataSample {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+pub struct IwEventSample {
+    pub timestamp_ms: u64,
+    pub line: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "kind", content = "payload")]
 pub enum SampleEvent {
     Shairport(ShairportSample),
     WifiStation(WifiStationSample),
     System(SystemSample),
     ShairportMetadata(ShairportMetadataSample),
+    IwEvent(IwEventSample),
 }

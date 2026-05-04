@@ -1,5 +1,6 @@
 mod collectors;
 
+use collectors::iw_event::stream_iw_events;
 use collectors::shairport::stream_shairport_logs;
 use collectors::shairport_metadata::stream_shairport_metadata;
 use collectors::system::stream_system_stats;
@@ -112,7 +113,10 @@ impl HistoryState {
         };
 
         match &timed.event {
-            SampleEvent::Shairport(_) | SampleEvent::WifiStation(_) | SampleEvent::System(_) => {
+            SampleEvent::Shairport(_)
+            | SampleEvent::WifiStation(_)
+            | SampleEvent::System(_)
+            | SampleEvent::IwEvent(_) => {
                 self.telemetry.push_back(timed);
                 if self.telemetry.len() > HISTORY_MAX_POINTS {
                     let _ = self.telemetry.pop_front();
@@ -255,6 +259,7 @@ async fn main() {
     tokio::spawn(stream_shairport_metadata(tx.clone()));
     tokio::spawn(stream_wlan_station_dump(tx.clone()));
     tokio::spawn(stream_system_stats(tx.clone()));
+    tokio::spawn(stream_iw_events(tx.clone()));
 
     let app_state = AppState { tx, history };
 

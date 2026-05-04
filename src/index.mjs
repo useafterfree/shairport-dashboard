@@ -19,9 +19,12 @@ const state = {
         metadata: null,
         wifi: null,
         system: null,
+        iw_event: null,
     },
     latestWifi: null,
     latestSystem: null,
+    iwEventLog: [],
+    iwEventFilter: "",
     shairportSeries: {
         av_sync_error_ms: [],
         ppm: [],
@@ -44,8 +47,19 @@ const state = {
     },
 };
 
+const MAX_IW_EVENT_LINES = 200;
+
 function keepLastN(points, value) {
     return [...points, value];
+}
+
+function appendBounded(items, value, maxItems) {
+    const next = [...items, value];
+    if (next.length <= maxItems) {
+        return next;
+    }
+
+    return next.slice(next.length - maxItems);
 }
 
 function applyTheme(themeName, persist = true) {
@@ -305,6 +319,21 @@ function pushSystem(sample, recordedAtMs) {
     }
 }
 
+function pushIwEvent(sample, recordedAtMs) {
+    updateStreamTimestamp("iw_event", recordedAtMs);
+    const timestampMs = sample.timestamp_ms || recordedAtMs || Date.now();
+    const line = String(sample.line || "").trim();
+    if (!line) {
+        return;
+    }
+
+    state.iwEventLog = appendBounded(
+        state.iwEventLog,
+        { timestampMs, line },
+        MAX_IW_EVENT_LINES,
+    );
+}
+
 function fmt(value, digits = 2) {
     if (value === null || value === undefined) {
         return "-";
@@ -449,6 +478,12 @@ function App(props) {
     const latestShairport = props.state.latestShairport;
     const latestShairportMetadata = props.state.latestShairportMetadata;
     const latestSystem = props.state.latestSystem;
+    const iwEventLog = props.state.iwEventLog || [];
+    const iwEventFilter = props.state.iwEventFilter || "";
+    const normalizedIwFilter = iwEventFilter.trim().toLowerCase();
+    const filteredIwEventLog = normalizedIwFilter
+        ? iwEventLog.filter((entry) => entry.line.toLowerCase().includes(normalizedIwFilter))
+        : iwEventLog;
     const nowPlayingPulseClass = props.state.nowPlayingPulseToken > 0 ? "pulse-highlight" : "";
     const shairportFreshness = freshnessClass(props.state.lastUpdateMs.shairport);
     const wifiFreshness = freshnessClass(props.state.lastUpdateMs.wifi);
@@ -484,7 +519,7 @@ function App(props) {
                 WS ${wsLabel()}
             </span>
             <span class=${`status-chip ${shairportFreshness}`}>
-                Shairport ${freshnessLabel(props.state.lastUpdateMs.shairport)}
+                Sync ${freshnessLabel(props.state.lastUpdateMs.shairport)}
             </span>
             <span class="status-chip metadata-chip">
                 ${metadataLastUpdatedLabel(props.state.lastUpdateMs.metadata)}
@@ -682,6 +717,38 @@ function App(props) {
                 />
             </div>
         </section>
+
+        <section class="stream-section">
+            <header class="stream-header">
+                <h2>iw event -t</h2>
+                <p>Kernel wireless events from iw</p>
+            </header>
+            <article class="meta-card log-card">
+                <div class="event-log-toolbar">
+                    <input
+                        class="event-log-filter"
+                        type="text"
+                        value=${iwEventFilter}
+                        placeholder="Filter events (e.g. connected, auth, disconnected)"
+                        oninput=${(ev) => {
+            state.iwEventFilter = ev.target.value;
+            redraw();
+        }}
+                    />
+                    <span class="event-log-count">${filteredIwEventLog.length}/${iwEventLog.length}</span>
+                </div>
+                <div class="event-log" role="log" aria-live="polite">
+                    ${filteredIwEventLog.length
+            ? filteredIwEventLog.map((entry) => html`
+                                <div class="event-log-line">
+                                    <span class="event-log-ts">${new Date(entry.timestampMs).toLocaleTimeString()}</span>
+                                    <span class="event-log-msg">${entry.line}</span>
+                                </div>
+                            `)
+            : html`<div class="event-log-empty">${iwEventLog.length ? "No matching iw events for this filter." : "No iw events yet."}</div>`}
+                </div>
+            </article>
+        </section>
     </main>
   `;
 }
@@ -718,6 +785,9 @@ function connect() {
         }
         if (event.kind === "ShairportMetadata") {
             pushShairportMetadata(event.payload, recordedAtMs);
+        }
+        if (event.kind === "IwEvent") {
+            pushIwEvent(event.payload, recordedAtMs);
         }
         redraw();
     };

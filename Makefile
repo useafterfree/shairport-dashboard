@@ -4,7 +4,7 @@ BINARY := shairport-dashboard
 ASSET_DIR := /usr/local/share/$(BINARY)
 ASSETS := src/index.html src/index.mjs src/index.css
 
-build:
+build: prebuild
 	cargo build --release
 
 run:
@@ -15,6 +15,9 @@ check:
 
 test:
 	cargo test
+
+prebuild: check test
+
 
 install: build
 	sudo install -m 755 target/release/$(BINARY) /usr/local/bin/$(BINARY)
