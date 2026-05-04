@@ -528,6 +528,7 @@ function App(props) {
             <article class="meta-card">
                 <h2>Raspberry Pi 5 System</h2>
                 <div class="meta-card-rows">
+                    <span class="lbl">Uptime</span><span class="val">${latestSystem && latestSystem.uptime_seconds !== null ? formatHms(latestSystem.uptime_seconds) : "unknown"}</span>
                     <span class="lbl">CPU Temp</span><span class="val">${latestSystem ? `${fmt(latestSystem.cpu_temp_c)} C` : "-"}</span>
                     <span class="lbl">CPU Usage</span><span class="val">${latestSystem ? `${fmt(latestSystem.cpu_usage_pct)} %` : "-"}</span>
                     <span class="lbl">RAM Usage</span><span class="val">${latestSystem ? `${fmt(latestSystem.ram_usage_pct)} %` : "-"}</span>

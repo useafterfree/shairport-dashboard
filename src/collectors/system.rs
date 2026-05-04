@@ -13,6 +13,7 @@ pub async fn stream_system_stats(tx: broadcast::Sender<SampleEvent>) {
     loop {
         ticker.tick().await;
 
+        let uptime_seconds = read_uptime_seconds().await;
         let cpu_temp_c = read_cpu_temp_c().await.unwrap_or(0.0);
         let ram_usage_pct = read_ram_usage_pct().await.unwrap_or(0.0);
         let fan_speeds_rpm = read_fan_speeds_rpm();
@@ -40,6 +41,7 @@ pub async fn stream_system_stats(tx: broadcast::Sender<SampleEvent>) {
 
         let sample = SystemSample {
             timestamp_ms: now_ms(),
+            uptime_seconds,
             cpu_temp_c,
             cpu_usage_pct,
             ram_usage_pct,
@@ -65,6 +67,21 @@ async fn read_cpu_temp_c() -> Option<f64> {
         .ok()?;
     let millic = raw.trim().parse::<f64>().ok()?;
     Some(millic / 1000.0)
+}
+
+fn parse_uptime_seconds(raw: &str) -> Option<u64> {
+    let first = raw.split_whitespace().next()?;
+    let secs = first.parse::<f64>().ok()?;
+    if secs.is_sign_negative() {
+        return None;
+    }
+
+    Some(secs.floor() as u64)
+}
+
+async fn read_uptime_seconds() -> Option<u64> {
+    let raw = tokio::fs::read_to_string("/proc/uptime").await.ok()?;
+    parse_uptime_seconds(&raw)
 }
 
 async fn read_cpu_totals() -> Option<(u64, u64)> {
@@ -160,4 +177,22 @@ async fn read_throttled_now() -> Option<bool> {
 
     // Bit 2 indicates currently throttled.
     Some((flags & (1 << 2)) != 0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_uptime_seconds;
+
+    #[test]
+    fn parses_proc_uptime_first_field() {
+        let raw = "12345.67 8901.23\n";
+        assert_eq!(parse_uptime_seconds(raw), Some(12345));
+    }
+
+    #[test]
+    fn rejects_invalid_or_negative_uptime() {
+        assert_eq!(parse_uptime_seconds("-1.0 0.0\n"), None);
+        assert_eq!(parse_uptime_seconds("not-a-number"), None);
+        assert_eq!(parse_uptime_seconds(""), None);
+    }
 }

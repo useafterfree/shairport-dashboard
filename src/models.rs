@@ -42,6 +42,7 @@ pub struct ShairportSample {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct SystemSample {
     pub timestamp_ms: u64,
+    pub uptime_seconds: Option<u64>,
     pub cpu_temp_c: f64,
     pub cpu_usage_pct: f64,
     pub ram_usage_pct: f64,
